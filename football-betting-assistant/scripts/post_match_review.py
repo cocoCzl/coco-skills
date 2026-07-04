@@ -45,12 +45,28 @@ def _parse_line(value: Any) -> float | None:
 
 
 def _score_set(value: Any) -> list[str]:
+    if isinstance(value, dict):
+        scores: list[str] = []
+        if value.get("score"):
+            scores.append(str(value["score"]))
+        for key in ("primary", "core", "enhanced", "backup", "candidates", "scores"):
+            if key in value:
+                scores.extend(_score_set(value.get(key)))
+        seen: set[str] = set()
+        result: list[str] = []
+        for score in scores:
+            if score not in seen:
+                result.append(score)
+                seen.add(score)
+        return result
     if isinstance(value, list):
         scores = []
         for item in value:
             if isinstance(item, dict):
                 if item.get("score"):
                     scores.append(str(item["score"]))
+                else:
+                    scores.extend(_score_set(item))
             else:
                 scores.append(str(item))
         return scores
@@ -68,6 +84,25 @@ def _total_goals_set(value: Any) -> set[int]:
     return {int(item) for item in re.findall(r"\d+", str(value or ""))}
 
 
+def _market_text(leg: dict[str, Any]) -> str:
+    return " ".join(str(leg.get(key) or "") for key in ("source_snapshot_market", "market")).strip()
+
+
+def _market_kind(leg: dict[str, Any]) -> str:
+    market_text = _market_text(leg)
+    if "比分" in market_text or "correct_score" in market_text:
+        return "correct_score"
+    if "总进球" in market_text or "total_goals" in market_text:
+        return "total_goals"
+    if "大小球" in market_text or "over_under" in market_text:
+        return "over_under"
+    if "让球" in market_text or "handicap_match_result" in market_text:
+        return "handicap_result"
+    if "胜平负" in market_text or "match_result" in market_text:
+        return "match_result"
+    return "unknown"
+
+
 def _find_match_record(prediction: dict[str, Any], match_name: str) -> dict[str, Any] | None:
     data = prediction.get("data") or {}
     for record in ((data.get("model_outputs") or {}).get("match_records") or []):
@@ -77,26 +112,28 @@ def _find_match_record(prediction: dict[str, Any], match_name: str) -> dict[str,
 
 
 def _evaluate_leg(leg: dict[str, Any], home_goals: int, away_goals: int) -> dict[str, Any]:
-    market = str(leg.get("source_snapshot_market") or leg.get("market") or "")
+    market = _market_kind(leg)
     selection = str(leg.get("selection") or "")
     final_score = f"{home_goals}:{away_goals}"
     total = home_goals + away_goals
     hit: bool | None = None
     metric = "unknown"
 
-    if market == "match_result" or leg.get("market") == "胜平负":
+    if market == "match_result":
         metric = "match_result"
         hit = _match_result(home_goals, away_goals) in selection
-    elif market == "handicap_match_result" or leg.get("market") == "让球胜平负":
+    elif market == "handicap_result":
         metric = "handicap_result"
-        line = _parse_line(leg.get("source_line"))
+        line = _parse_line(leg.get("source_line") or leg.get("line") or leg.get("handicap_line") or leg.get("market"))
         if line is not None:
             hit = _handicap_result(home_goals, away_goals, line) in selection
-    elif market in {"total_goals", "总进球"} or leg.get("market") == "总进球":
+    elif market == "total_goals":
         metric = "total_goals"
         selected_totals = _total_goals_set(selection)
         hit = total in selected_totals if selected_totals else f"{total}球" in selection or str(total) == selection
-    elif market in {"correct_score", "比分"} or leg.get("market") == "比分":
+    elif market == "over_under":
+        metric = "over_under"
+    elif market == "correct_score":
         metric = "correct_score"
         hit = final_score in _score_set(selection)
 

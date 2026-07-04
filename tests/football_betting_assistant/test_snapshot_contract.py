@@ -1232,6 +1232,83 @@ class SnapshotContractTests(unittest.TestCase):
             self.assertTrue(review["data"]["leg_reviews"])
             self.assertIn("score_review", review["data"])
 
+    def test_post_match_review_handles_structured_scores_and_chinese_handicap_market(self) -> None:
+        prediction = {
+            "kind": "prediction_snapshot",
+            "data": {
+                "report_id": "structured-review-test",
+                "generated_at": "2026-07-02T12:35:00+08:00",
+                "model_outputs": {
+                    "match_records": [
+                        {
+                            "match": "西班牙 vs 奥地利",
+                            "score_candidates": {
+                                "primary": "2:0",
+                                "core": ["2:0", "1:0", "3:0"],
+                                "enhanced": ["2:0", "1:0", "3:0", "2:1"],
+                                "backup": ["1:1"],
+                            },
+                            "result_probabilities": {"home_win": 0.74, "draw": 0.17, "away_win": 0.09},
+                        }
+                    ],
+                    "ticket_plans": [
+                        {
+                            "name": "比分与让球",
+                            "legs": [
+                                {
+                                    "match": "西班牙 vs 奥地利",
+                                    "market": "比分",
+                                    "source_snapshot_market": "user-screenshot",
+                                    "selection": "2:0 / 1:0 / 3:0",
+                                },
+                                {
+                                    "match": "西班牙 vs 奥地利",
+                                    "market": "让球胜平负 -1",
+                                    "source_snapshot_market": "sporttery",
+                                    "selection": "让胜 / 让平",
+                                },
+                            ],
+                        }
+                    ],
+                },
+            },
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            prediction_path = tmp_path / "prediction.json"
+            prediction_path.write_text(json.dumps(prediction, ensure_ascii=False), encoding="utf-8")
+            review_result = subprocess.run(
+                [
+                    "python3",
+                    str(POST_MATCH_REVIEW),
+                    str(prediction_path),
+                    "--match",
+                    "西班牙 vs 奥地利",
+                    "--home-goals",
+                    "3",
+                    "--away-goals",
+                    "0",
+                    "--result-source",
+                    "test fixture",
+                    "--out-dir",
+                    str(tmp_path / "reviews"),
+                ],
+                cwd=ROOT,
+                text=True,
+                capture_output=True,
+                check=False,
+            )
+        self.assertEqual(review_result.returncode, 0, review_result.stdout + review_result.stderr)
+        payload = json.loads(review_result.stdout)
+        review = payload["review"]
+        self.assertFalse(review["score_review"]["top1_hit"])
+        self.assertTrue(review["score_review"]["top3_hit"])
+        self.assertTrue(review["score_review"]["coverage_hit"])
+        leg_metrics = {item["market"]: item for item in review["leg_reviews"]}
+        self.assertTrue(leg_metrics["比分"]["hit"])
+        self.assertEqual(leg_metrics["让球胜平负 -1"]["metric"], "handicap_result")
+        self.assertTrue(leg_metrics["让球胜平负 -1"]["hit"])
+
     def test_auto_post_match_review_discovers_predictions_and_renders_html(self) -> None:
         snapshot = FIXTURES / "football-snapshot-sporttery.json"
         with tempfile.TemporaryDirectory() as tmp:
