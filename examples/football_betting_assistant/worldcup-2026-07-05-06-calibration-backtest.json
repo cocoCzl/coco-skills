@@ -1,0 +1,209 @@
+{
+  "kind": "backtest_samples",
+  "data": {
+    "samples": [
+      {
+        "sample_id": "wc-2026-r16-089-canada-morocco",
+        "fixture": {
+          "home_team": "加拿大",
+          "away_team": "摩洛哥",
+          "competition": "世界杯 淘汰赛",
+          "kickoff_time": "2026-07-05T01:00:00+08:00",
+          "timezone": "Asia/Shanghai",
+          "venue_type": "neutral"
+        },
+        "prediction": {
+          "observed_at": "2026-07-04T13:39:00+08:00",
+          "result_probabilities": {
+            "home_win": 0.206,
+            "draw": 0.256,
+            "away_win": 0.538
+          },
+          "score_candidates": [
+            { "score": "0:1", "probability": 0.141 },
+            { "score": "1:1", "probability": 0.12 },
+            { "score": "0:2", "probability": 0.109 },
+            { "score": "1:2", "probability": 0.093 },
+            { "score": "0:0", "probability": 0.091 }
+          ],
+          "reference_grade": "B",
+          "model_confidence": "medium",
+          "data_confidence": "medium",
+          "risk_points": ["single_source_odds", "draw_protection", "lineup_unconfirmed", "score_tail_miss_review"],
+          "ticket_plans": [
+            {
+              "name": "模型最稳主单片段",
+              "legs": [
+                {
+                  "match": "加拿大 vs 摩洛哥",
+                  "market": "胜平负",
+                  "selection": "负"
+                },
+                {
+                  "match": "加拿大 vs 摩洛哥",
+                  "market": "总进球",
+                  "selection": "2 / 3"
+                }
+              ]
+            }
+          ]
+        },
+        "actual_result": {
+          "home_goals": 0,
+          "away_goals": 3
+        }
+      },
+      {
+        "sample_id": "wc-2026-r16-090-paraguay-france",
+        "fixture": {
+          "home_team": "巴拉圭",
+          "away_team": "法国",
+          "competition": "世界杯 淘汰赛",
+          "kickoff_time": "2026-07-05T05:00:00+08:00",
+          "timezone": "Asia/Shanghai",
+          "venue_type": "neutral"
+        },
+        "prediction": {
+          "observed_at": "2026-07-04T13:39:00+08:00",
+          "result_probabilities": {
+            "home_win": 0.085,
+            "draw": 0.16,
+            "away_win": 0.754
+          },
+          "score_candidates": [
+            { "score": "0:2", "probability": 0.137 },
+            { "score": "0:1", "probability": 0.117 },
+            { "score": "0:3", "probability": 0.108 },
+            { "score": "1:2", "probability": 0.089 },
+            { "score": "1:1", "probability": 0.076 },
+            { "score": "1:3", "probability": 0.07 }
+          ],
+          "reference_grade": "B",
+          "model_confidence": "medium",
+          "data_confidence": "medium",
+          "risk_points": ["ordinary_result_not_visible", "deep_handicap_capping", "lineup_unconfirmed", "portfolio_construction_error_review"],
+          "ticket_plans": [
+            {
+              "name": "模型最稳主单片段",
+              "legs": [
+                {
+                  "match": "巴拉圭 vs 法国",
+                  "market": "让球胜平负",
+                  "line": "+2",
+                  "selection": "让平 / 让负",
+                  "score_candidates": ["0:2", "0:1", "0:3", "1:2"],
+                  "protection_candidates": ["让胜"]
+                },
+                {
+                  "match": "巴拉圭 vs 法国",
+                  "market": "总进球",
+                  "selection": "2 / 3 / 4",
+                  "score_candidates": ["0:2", "0:1", "0:3", "1:2"],
+                  "protection_candidates": ["0:1"]
+                }
+              ]
+            }
+          ]
+        },
+        "actual_result": {
+          "home_goals": 0,
+          "away_goals": 1
+        }
+      },
+      {
+        "sample_id": "wc-2026-r16-091-brazil-norway",
+        "fixture": {
+          "home_team": "巴西",
+          "away_team": "挪威",
+          "competition": "世界杯 淘汰赛",
+          "kickoff_time": "2026-07-06T04:00:00+08:00",
+          "timezone": "Asia/Shanghai",
+          "venue_type": "neutral"
+        },
+        "prediction": {
+          "observed_at": "2026-07-04T13:39:00+08:00",
+          "result_probabilities": {
+            "home_win": 0.538,
+            "draw": 0.245,
+            "away_win": 0.217
+          },
+          "score_candidates": [
+            { "score": "1:0", "probability": 0.123 },
+            { "score": "1:1", "probability": 0.116 },
+            { "score": "2:0", "probability": 0.101 },
+            { "score": "2:1", "probability": 0.096 },
+            { "score": "0:0", "probability": 0.074 },
+            { "score": "0:1", "probability": 0.071 }
+          ],
+          "reference_grade": "B",
+          "model_confidence": "medium",
+          "data_confidence": "medium",
+          "risk_points": ["ordinary_result_odds_not_visible", "draw_protection", "lineup_unconfirmed", "opponent_transition_threat"],
+          "ticket_plans": [
+            {
+              "name": "总进球方向单片段",
+              "legs": [
+                {
+                  "match": "巴西 vs 挪威",
+                  "market": "总进球",
+                  "selection": "2 / 3"
+                }
+              ]
+            }
+          ]
+        },
+        "actual_result": {
+          "home_goals": 1,
+          "away_goals": 2
+        }
+      },
+      {
+        "sample_id": "wc-2026-r16-092-mexico-england",
+        "fixture": {
+          "home_team": "墨西哥",
+          "away_team": "英格兰",
+          "competition": "世界杯 淘汰赛",
+          "kickoff_time": "2026-07-06T08:00:00+08:00",
+          "timezone": "Asia/Shanghai",
+          "venue_type": "neutral"
+        },
+        "prediction": {
+          "observed_at": "2026-07-04T13:39:00+08:00",
+          "result_probabilities": {
+            "home_win": 0.236,
+            "draw": 0.279,
+            "away_win": 0.485
+          },
+          "score_candidates": [
+            { "score": "0:1", "probability": 0.15 },
+            { "score": "1:1", "probability": 0.127 },
+            { "score": "0:0", "probability": 0.111 },
+            { "score": "0:2", "probability": 0.101 },
+            { "score": "1:0", "probability": 0.094 },
+            { "score": "1:2", "probability": 0.086 }
+          ],
+          "reference_grade": "B",
+          "model_confidence": "medium",
+          "data_confidence": "medium",
+          "risk_points": ["ordinary_result_odds_not_visible", "low_total", "draw_protection", "tail_event_total_goals_miss_review"],
+          "ticket_plans": [
+            {
+              "name": "模型最稳主单片段",
+              "legs": [
+                {
+                  "match": "墨西哥 vs 英格兰",
+                  "market": "总进球",
+                  "selection": "1 / 2 / 3"
+                }
+              ]
+            }
+          ]
+        },
+        "actual_result": {
+          "home_goals": 2,
+          "away_goals": 3
+        }
+      }
+    ]
+  }
+}

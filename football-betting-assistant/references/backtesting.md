@@ -38,6 +38,8 @@ Only change model rules after a pattern repeats across enough samples. Good chan
 - Add Pass when model edge is small and the odds source is not consensus.
 - Widen score coverage for high total-xG matches or clear two-way scoring paths.
 - Widen total-goals coverage or downgrade totals tickets when total xG is high, the handicap is deep, final-round goal-difference pressure exists, or 5+ goal tail probability is material.
+- Audit one-goal paths separately: if a candidate score such as `0:1` or `1:0` was available before kickoff but the ticket omitted total goals 1 or the matching handicap result, count it as a portfolio-construction issue before changing xG priors.
+- Track event-tail misses separately from ordinary low-total misses. Red cards, penalties, weather delays, altitude, home-crowd pressure, and chase-game states should trigger wider 4/5-goal protection or downgrade rules when they were knowable pre-match.
 - Avoid forcing exact-score portfolios when score probability mass is diffuse.
 - Do not collapse protected handicap paths into a single leg. If the model says `+1` needs one-goal-loss protection, add `让平` or downgrade; if `-1 让负` has a meaningful cover-score path, add protection or downgrade.
 - If a miss was already in score coverage or protection candidates, tune portfolio construction before changing xG priors.

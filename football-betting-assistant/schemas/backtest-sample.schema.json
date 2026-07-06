@@ -78,7 +78,37 @@
                   "reference_grade": { "type": "string", "enum": ["A", "B", "C", "Pass"] },
                   "model_confidence": { "type": "string", "enum": ["high", "medium", "low"] },
                   "data_confidence": { "type": "string", "enum": ["high", "medium", "low"] },
-                  "risk_points": { "type": "array", "items": { "type": "string" } }
+                  "risk_points": { "type": "array", "items": { "type": "string" } },
+                  "ticket_plans": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "additionalProperties": false,
+                      "required": ["name", "legs"],
+                      "properties": {
+                        "name": { "type": "string", "minLength": 1 },
+                        "legs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "additionalProperties": true,
+                            "required": ["match", "market", "selection"],
+                            "properties": {
+                              "match": { "type": "string", "minLength": 1 },
+                              "market": { "type": "string", "minLength": 1 },
+                              "source_snapshot_market": { "type": "string" },
+                              "selection": { "type": "string", "minLength": 1 },
+                              "line": { "type": ["string", "number", "null"] },
+                              "source_line": { "type": ["string", "number", "null"] },
+                              "handicap_line": { "type": ["string", "number", "null"] },
+                              "score_candidates": { "type": "array" },
+                              "protection_candidates": { "type": "array" }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
                 }
               },
               "actual_result": {

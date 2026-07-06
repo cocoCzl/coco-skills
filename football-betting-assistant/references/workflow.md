@@ -36,7 +36,8 @@ If the user asks to improve hit rate, accuracy, calibration, or model quality, r
 9. Compare model probabilities with implied probabilities when odds exist.
 10. Apply edge thresholds and downgrade rules. Prefer `scripts/grade_calculator.py` when model probability and no-vig market probability exist.
 11. Before final purchase-plan output, apply `scripts/late_update_rules.py` when kickoff timing, lineup status, sales availability, or odds movement data are available.
-12. Produce the Single-Match Report template.
+12. If a single-match recommendation includes a formal ticket leg, run or manually apply `scripts/preflight_risk_audit.py` checks against the structured record. Resolve blocking issues before using "模型最稳" or "稳健方向" language.
+13. Produce the Single-Match Report template.
 
 Single-match reports must include a visible evidence chain:
 
@@ -60,13 +61,14 @@ For group-stage final-round matches, calculate qualification context before trea
 8. For each match, include source notes, group/table context, basic football context, match script, model record, result lean, handicap lean, over-under/total-goals lean, score ranking, reference grade, and risk.
 9. Check Portfolio Correlation: competition stage, same group/table incentives, rotation, weather clusters, and shared market assumptions.
 10. Exclude Pass matches or matches with severe Information Sufficiency gaps from tickets, but still show their single-match analysis and explain why they are not in the main plan.
-11. Build portfolio variants from the actual model confidence, score concentration, market availability, and user intent. Do not force fixed 2/16/32/48 元 tiers or force a 4/6/8-leg ticket. Conservative main plans must inherit the risk paths described in the analysis: use `risk_flags`, `protection_candidates`, `must_protect_selections`, score candidates, and handicap line to expand, downgrade, or exclude narrow legs before calculating units.
-12. Apply ticket limits by market family: exact-score tickets may use up to four matches; 胜平负 / 让球胜平负 direction tickets may use up to eight matches; 大小球 / 总进球 direction tickets may use up to eight matches. Mixed tickets may use up to eight matches, but if exact-score legs dominate, keep them to four matches.
-13. If the strongest fourfold contains any obvious risk leg (missing group context, low data confidence, high rotation risk, route-selection risk, or market/result conflict), also provide a "更稳三串一" that removes the riskiest leg. If fewer than three low-risk eligible legs remain, provide a "更稳二串一" and explain why the model did not force three legs.
-14. Add named portfolio variants when supported by the data: 模型最稳主单, 更稳三串一/二串一, 让球/胜平负方向单, 大小球/总进球单, 单比分主推小单, 比分4串1, 基础比分覆盖, 增强比分覆盖, 混合过关单, 备选/替换, 可选小组合, 补洞单, and 搏冷/高赔率小单. Keep speculative variants clearly optional and high variance.
-15. Provide More Combination Candidates only when there are extra plausible directions, and keep them separate from the main plans.
-16. Provide Score Coverage for every analyzed match. Use up to four scores per match only when a match has a meaningful secondary path, such as late-goal expansion, red-card tail risk, draw protection, favorite-underperformance risk, or underdog transition threat.
-17. Produce the Portfolio Report template.
+11. Build portfolio variants from the actual model confidence, score concentration, market availability, and user intent. Do not force fixed 2/16/32/48 元 tiers or force a 4/6/8-leg ticket. Conservative main plans must inherit the risk paths described in the analysis: use `risk_flags`, `tail_risk_flags`, `protection_candidates`, `must_protect_selections`, score candidates, and handicap line to expand, downgrade, or exclude narrow legs before calculating units.
+12. Run `scripts/score_coverage_analyzer.py` and `scripts/portfolio_builder.py` when structured graded legs exist, then run `scripts/preflight_risk_audit.py` on the report input or prediction snapshot before final naming. Any blocking audit issue must be resolved by protection, downgrade, or removal before a leg can remain in "模型最稳" or "稳健方向".
+13. Apply ticket limits by market family: exact-score tickets may use up to four matches; 胜平负 / 让球胜平负 direction tickets may use up to eight matches; 大小球 / 总进球 direction tickets may use up to eight matches. Mixed tickets may use up to eight matches, but if exact-score legs dominate, keep them to four matches.
+14. If the strongest fourfold contains any obvious risk leg (missing group context, low data confidence, high rotation risk, route-selection risk, market/result conflict, audit block, or unprotected tail), also provide a "更稳三串一" that removes the riskiest leg. If fewer than three low-risk eligible legs remain, provide a "更稳二串一" and explain why the model did not force three legs.
+15. Add named portfolio variants when supported by the data: 模型最稳主单, 更稳三串一/二串一, 让球/胜平负方向单, 大小球/总进球单, 单比分主推小单, 比分4串1, 基础比分覆盖, 增强比分覆盖, 混合过关单, 备选/替换, 可选小组合, 补洞单, and 搏冷/高赔率小单. Keep speculative variants clearly optional and high variance.
+16. Provide More Combination Candidates only when there are extra plausible directions, and keep them separate from the main plans.
+17. Provide Score Coverage for every analyzed match. Use up to four scores per match only when a match has a meaningful secondary path, such as late-goal expansion, red-card tail risk, draw protection, favorite-underperformance risk, or underdog transition threat.
+18. Produce the Portfolio Report template.
 
 Do not output a single "only correct" portfolio. If enough data exists, always offer separate market-family plans plus optional alternative combinations.
 
@@ -95,6 +97,8 @@ Construct the ticket structures from the full match slate:
 - For 胜平负 / 让球胜平负 tickets, select up to eight matches with the strongest direction confidence and confirmed buyable markets.
 - For 大小球 / 总进球 tickets, select up to eight matches with the clearest total-goals or over-under edge.
 - Use wider coverage on the most volatile match, not mechanically on the first match.
+- Do not omit a 1-goal total path from a totals/deep-handicap ticket when `0:1`, `1:0`, or a one-goal score is inside Top 3 or explicit protection candidates.
+- Do not omit the 4/5-goal tail from a narrow totals ticket when structured risk flags show red-card, penalty, weather-delay, altitude, home-crowd, chase-game, goal-difference, or 5+ probability risk. Widen, downgrade, or move the leg to optional high variance.
 - Treat "covered in analysis but omitted from the ticket" as a portfolio construction error. A `+1` leg with an explicit opponent one-goal-win path needs `让平` protection or downgrade; a `-1 让负` leg with meaningful favorite-cover scores needs protection or downgrade.
 - If the user proposes their own score list, evaluate it directly: say what is合理, what is漏防, and how to补洞 if they have already bought it.
 - Show every ticket as `A x B x C... = N 注`; amount is `N x 2 元/unit = X 元` unless the user gives a different unit price.
@@ -169,6 +173,7 @@ Before answering:
 - Check kickoff/sales availability and late-update rules; do not create a new pre-match purchase plan after kickoff or when sales availability cannot be confirmed.
 - Check source timestamps and data gaps.
 - Apply Reference Grade and confidence rules.
+- Run or manually apply the preflight risk audit: no B-grade/B-minus single-source or lineup-unconfirmed leg in "模型最稳"; no unprotected one-goal/deep-handicap path; no unprotected material 4/5-goal tail.
 - For backtests, check that every sample used only pre-match data and that sample size is shown.
 - For high-total or deep-handicap matches, check whether 5+ goal tail probability or goal-difference pressure should block narrow total-goals tickets and exact-score core tickets.
 - For group-stage final-round matches, check that qualification context uses potential knockout-stage opponents instead of assuming the next opponent is always a round-of-16 opponent.

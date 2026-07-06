@@ -70,6 +70,13 @@ Withhold Reference Purchase Plans or Portfolio Variants when:
 - Team type is unknown and no suitable same-type competition parameter pool can be verified; in that case keep analysis-only or cap at `C`.
 - Conservative main plans depend on C-grade legs, hand-set xG without structured inputs, unconfirmed lineups near kickoff, weak score coverage, or material total-goals tail risk.
 
+Withhold "模型最稳" / "稳健方向" labels when:
+
+- The leg is B/B-minus and has single-source odds, unconfirmed lineups, or missing late injury/weather/market context.
+- The leg has a one-goal score path in Top 3/protection candidates but the chosen handicap or total-goals selection excludes that path.
+- The leg has red-card, penalty, weather-delay, altitude, home-crowd, chase-game, goal-difference, or 5+ goal tail risk and the chosen total-goals selection stops below 5 without backup.
+- `scripts/preflight_risk_audit.py` returns a blocking issue.
+
 ## Total-Goals Tail Downgrades
 
 Downgrade or withhold narrow totals and exact-score core tickets when:
@@ -78,8 +85,17 @@ Downgrade or withhold narrow totals and exact-score core tickets when:
 - A favorite is on a deep handicap and both "controlled win" and "blowout" scripts are plausible.
 - Final-round group context creates goal-difference or best-third-place pressure.
 - 5+ goal tail probability is material but the ticket only covers 2/3/4 or low exact-score clusters.
+- A low-total assumption is based only on "淘汰赛谨慎" while event-risk flags make 4/5 goals plausible.
 
 In these cases, either widen the total-goals set, move the leg to a high-variance optional plan, or mark it Pass for conservative portfolios.
+
+## One-Goal Path Protection
+
+Do not let a ticket contradict the score matrix. If `0:1`, `1:0`, or any one-goal total appears in Top 3 or explicit protection candidates:
+
+- A total-goals ticket must include 1, or be downgraded/paired with a backup.
+- A deep handicap ticket must include the handicap outcome implied by that one-goal score, or be downgraded.
+- A direction-only leg may remain as probability analysis, but it must not be labelled "模型最稳" unless the omitted path is explicitly explained and protected elsewhere.
 
 ## Language Guardrails
 
