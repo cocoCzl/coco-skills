@@ -9,6 +9,14 @@ import re
 from pathlib import Path
 from typing import Any
 
+from handicap_rules import (
+    handicap_text_conflicts,
+    mapping_table_text,
+    missing_handicap_outcomes,
+    parse_handicap_line,
+    score_tuple,
+    split_scores,
+)
 
 MAIN_PLAN_MARKERS = ("模型最稳", "model_best", "稳健方向", "stable")
 LOW_DATA_FLAGS = {"single_source_odds", "lineup_unconfirmed", "ordinary_result_odds_not_visible"}
@@ -44,21 +52,11 @@ def _text(value: Any) -> str:
 
 
 def _split_scores(value: Any) -> list[str]:
-    items = value if isinstance(value, list) else re.split(r"/|,|，|\s+", _text(value))
-    scores: list[str] = []
-    for item in items:
-        raw = item.get("score") if isinstance(item, dict) else item
-        match = re.search(r"(\d+)\s*:\s*(\d+)", _text(raw))
-        if match:
-            scores.append(f"{int(match.group(1))}:{int(match.group(2))}")
-    return scores
+    return split_scores(value)
 
 
 def _score_tuple(score: str) -> tuple[int, int] | None:
-    match = re.search(r"(\d+)\s*:\s*(\d+)", score)
-    if not match:
-        return None
-    return int(match.group(1)), int(match.group(2))
+    return score_tuple(score)
 
 
 def _selected_totals(value: Any) -> set[int]:
@@ -66,20 +64,7 @@ def _selected_totals(value: Any) -> set[int]:
 
 
 def _parse_line(*values: Any) -> float | None:
-    for value in values:
-        match = re.search(r"[-+]?\d+(?:\.\d+)?", _text(value))
-        if match:
-            return float(match.group(0))
-    return None
-
-
-def _handicap_result(home_goals: int, away_goals: int, line: float) -> str:
-    adjusted = home_goals + line - away_goals
-    if adjusted > 0:
-        return "让胜"
-    if adjusted == 0:
-        return "让平"
-    return "让负"
+    return parse_handicap_line(*values)
 
 
 def _result_label(home_goals: int, away_goals: int) -> str:
@@ -234,16 +219,41 @@ def _audit_leg(plan: dict[str, Any], leg: dict[str, Any], record: dict[str, Any]
             issues.append(_issue(match_name, plan_name, "warning", "five_goal_tail_omitted", "Tail-risk flags are present but the total-goals selection stops below 5.", "Add 4/5 protection where buyable or move totals to a high-variance backup plan."))
 
     if "让" in market or "handicap" in market or re.search(r"[-+]\d", selection):
-        line = _parse_line(leg.get("source_line"), leg.get("line"), leg.get("handicap_line"), market, selection)
+        line = _parse_line(
+            leg.get("source_line"),
+            leg.get("line"),
+            leg.get("handicap_line"),
+            record.get("handicap_line") if record else None,
+            record.get("handicap_pick") if record else None,
+            market,
+            selection,
+        )
         if line is not None and scores:
-            inferred = []
-            for score in scores[:5]:
-                pair = _score_tuple(score)
-                if pair:
-                    inferred.append(_handicap_result(pair[0], pair[1], line))
-            omitted = sorted({outcome for outcome in inferred if outcome not in selection})
+            omitted = missing_handicap_outcomes(selection, scores, line, limit=5)
             if omitted:
                 issues.append(_issue(match_name, plan_name, "block", "handicap_protection_omitted", f"Top score candidates imply handicap outcomes {', '.join(omitted)} that are not selected.", "Expand the handicap selection or remove this leg from the main plan."))
+            mapping = mapping_table_text(scores, line, limit=5)
+            conflict_text = " ".join(
+                _text(value)
+                for value in (
+                    market,
+                    selection,
+                    leg.get("reason"),
+                    leg.get("analysis"),
+                )
+            )
+            conflicts = handicap_text_conflicts(conflict_text, line)
+            if conflicts:
+                issues.append(
+                    _issue(
+                        match_name,
+                        plan_name,
+                        "block",
+                        "handicap_text_mapping_conflict",
+                        f"Handicap prose conflicts with the handicap formula. Mapping: {mapping}. Conflict: {'; '.join(conflicts)}.",
+                        "Rewrite the handicap explanation and ticket selection using the score-to-handicap mapping.",
+                    )
+                )
 
     if "比分" in market or "correct_score" in market:
         selected_scores = set(_split_scores(selection))

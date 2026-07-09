@@ -17,6 +17,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from handicap_rules import (
+    handicap_text_conflicts,
+    mapping_table_text,
+    missing_handicap_outcomes,
+    parse_handicap_line,
+    split_scores,
+)
 
 SCORE_TYPES = {"score_4fold", "score_coverage"}
 DIRECTION_TYPES = {
@@ -137,6 +144,75 @@ def validate_ticket_plan(plan: dict[str, Any], index: int) -> None:
         raise ReportValidationError(f"ticket_plans[{index}].type is unsupported: {plan_type}")
 
 
+def normalize_match_name(value: Any) -> str:
+    return re.sub(r"\s+", "", raw_text(value, "")).replace("：", ":").lower()
+
+
+def find_match_analysis(leg: dict[str, Any], analyses: dict[str, dict[str, Any]]) -> dict[str, Any] | None:
+    match_text = normalize_match_name(leg.get("match"))
+    if match_text in analyses:
+        return analyses[match_text]
+    for key, analysis in analyses.items():
+        if match_text and (match_text in key or key in match_text):
+            return analysis
+    return None
+
+
+def validate_handicap_consistency(document: dict[str, Any]) -> None:
+    analyses = {
+        normalize_match_name(item.get("match")): item
+        for item in document.get("match_analyses", [])
+        if isinstance(item, dict) and item.get("match")
+    }
+    for plan_index, plan in enumerate(document.get("ticket_plans", []) or []):
+        for leg_index, leg in enumerate(plan.get("legs") or []):
+            if not isinstance(leg, dict):
+                continue
+            market = raw_text(leg.get("market"), "")
+            selection = raw_text(leg.get("selection"), "")
+            if "让" not in market and "handicap" not in market and "让" not in selection:
+                continue
+            analysis = find_match_analysis(leg, analyses)
+            line = parse_handicap_line(
+                leg.get("source_line"),
+                leg.get("line"),
+                leg.get("handicap_line"),
+                analysis.get("handicap_line") if analysis else None,
+                analysis.get("handicap_pick") if analysis else None,
+                market,
+                selection,
+            )
+            if line is None or not analysis:
+                continue
+            scores = split_scores(
+                leg.get("score_candidates")
+                or leg.get("score_coverage")
+                or analysis.get("score_candidates")
+            )
+            if not scores:
+                continue
+            missing = missing_handicap_outcomes(selection, scores, line, limit=5)
+            if missing:
+                mapping = mapping_table_text(scores, line, limit=5)
+                raise ReportValidationError(
+                    f"ticket_plans[{plan_index}].legs[{leg_index}] handicap selection omits {', '.join(missing)} from score mapping: {mapping}"
+                )
+            prose = " ".join(
+                raw_text(value, "")
+                for value in (
+                    market,
+                    selection,
+                    leg.get("reason"),
+                )
+            )
+            conflicts = handicap_text_conflicts(prose, line)
+            if conflicts:
+                mapping = mapping_table_text(scores, line, limit=5)
+                raise ReportValidationError(
+                    f"ticket_plans[{plan_index}].legs[{leg_index}] handicap prose conflicts with mapping {mapping}: {'; '.join(conflicts)}"
+                )
+
+
 def validate_report(document: dict[str, Any]) -> None:
     if not isinstance(document, dict):
         raise ReportValidationError("report document must be an object")
@@ -167,6 +243,7 @@ def validate_report(document: dict[str, Any]) -> None:
         if not isinstance(plan, dict):
             raise ReportValidationError(f"optional_small_combinations[{index}] must be an object")
         validate_ticket_plan(plan, index)
+    validate_handicap_consistency(document)
 
 
 def render_fixture_rows(fixtures: list[dict[str, Any]]) -> str:

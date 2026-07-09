@@ -74,6 +74,7 @@ Withhold "模型最稳" / "稳健方向" labels when:
 
 - The leg is B/B-minus and has single-source odds, unconfirmed lineups, or missing late injury/weather/market context.
 - The leg has a one-goal score path in Top 3/protection candidates but the chosen handicap or total-goals selection excludes that path.
+- The handicap prose or ticket selection contradicts the score mapping. For example, under `-1`, `1:0` and `2:1` map to `让平`, not `让负`.
 - The leg has red-card, penalty, weather-delay, altitude, home-crowd, chase-game, goal-difference, or 5+ goal tail risk and the chosen total-goals selection stops below 5 without backup.
 - `scripts/preflight_risk_audit.py` returns a blocking issue.
 

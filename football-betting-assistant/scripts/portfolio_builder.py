@@ -9,6 +9,13 @@ import re
 from pathlib import Path
 from typing import Any
 
+from handicap_rules import (
+    handicap_result,
+    ordered_unique,
+    parse_handicap_line,
+    score_tuple,
+    split_scores,
+)
 
 GRADE_ORDER = {"Pass": 0, "C": 1, "B": 2, "A": 3}
 MARKET_LIMITS = {
@@ -61,46 +68,24 @@ def _leg_reason_to_exclude(leg: dict[str, Any], risk_preference: str, include_ha
 
 
 def _score_values(value: Any) -> list[tuple[int, int]]:
-    if isinstance(value, list):
-        raw_items = value
-    elif value is None:
-        raw_items = []
-    else:
-        raw_items = re.split(r"/|,|，|\s+", str(value))
     scores: list[tuple[int, int]] = []
-    for item in raw_items:
-        raw_score = item.get("score") if isinstance(item, dict) else item
-        match = re.search(r"(\d+)\s*:\s*(\d+)", str(raw_score or ""))
-        if match:
-            scores.append((int(match.group(1)), int(match.group(2))))
+    for score in split_scores(value):
+        pair = score_tuple(score)
+        if pair:
+            scores.append(pair)
     return scores
 
 
 def _parse_handicap_line(value: Any) -> float | None:
-    if value in (None, ""):
-        return None
-    match = re.search(r"[-+]?\d+(?:\.\d+)?", str(value))
-    return float(match.group(0)) if match else None
+    return parse_handicap_line(value)
 
 
 def _handicap_outcome(home_goals: int, away_goals: int, line: float) -> str:
-    adjusted = home_goals + line - away_goals
-    if adjusted > 0:
-        return "让胜"
-    if adjusted == 0:
-        return "让平"
-    return "让负"
+    return handicap_result(home_goals, away_goals, line)
 
 
 def _ordered_unique(values: list[str]) -> list[str]:
-    seen: set[str] = set()
-    result: list[str] = []
-    for value in values:
-        text = str(value).strip()
-        if text and text not in seen:
-            result.append(text)
-            seen.add(text)
-    return result
+    return ordered_unique(values)
 
 
 def _explicit_protection_candidates(leg: dict[str, Any]) -> list[str]:

@@ -154,7 +154,7 @@ Default report language is Chinese Betting Vocabulary. Keep math visible but con
 - 比赛剧本：[谁会控球、谁会收缩、早进球/久攻不下/红牌或换人会怎样影响比分]
 - 数学模型：[prior xG -> 贝叶斯修正代码/幅度 -> final xG；泊松比分集中；赔率隐含概率/去水概率；edge/评级封顶]
 - 胜平负概率：[主胜/平/客胜区间 + 首选]
-- 让球判断：[让胜/让平/让负或 handicap cover 路径；解释赢球但不穿/打穿的条件]
+- 让球判断：[让胜/让平/让负或 handicap cover 路径；必须按 `主队进球 + 主队让球 - 客队进球` 映射核心比分。例：`-1` 下 `1:0/2:1 -> 让平`，`1:1 -> 让负`，`2:0 -> 让胜`；解释赢球但不穿/打穿的条件]
 - 大小球/总进球：[盘口或总进球倾向 + 为什么]
 - 比分分布：[低赔比分表或候选排序；区分主单比分、核心覆盖、增强覆盖、补防]
 - 等级/风险：[A/B/C/Pass + 关键风险]
@@ -217,6 +217,7 @@ Portfolio rules:
 - Exclude matches that are Pass or have severe data gaps.
 - Main-ticket selections must remain consistent with the risk section. If the analysis says a draw, one-goal margin, favorite-cover, underdog-goal, or late-expansion path is important, the ticket table must either include the protection selection, downgrade the match to backup, or explicitly list it under Pass / 排除项.
 - Do not present a single narrow handicap leg as "模型最稳" when score coverage already shows its miss path. Examples: `+1 让胜` needs `让平` if opponent one-goal win is a main path; `-1 让负` needs protection or downgrade if 2:0 / 3:1 cover scores are meaningful.
+- Do not collapse handicap vocabulary into ordinary win/draw/loss language. A `-1 让负` ticket only covers the favorite failing to win after the handicap is applied; favorite one-goal wins are `让平`, not `让负`. Whenever cited score candidates imply multiple handicap outcomes, show the mapping and either select all required outcomes, use another market, or downgrade/exclude the leg.
 
 ## HTML Report Structure
 

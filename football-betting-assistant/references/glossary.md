@@ -12,6 +12,8 @@ Use these terms consistently in reports, examples, schemas, and scripts.
 
 **Handicap Match Result Market**: A market on home win, draw, or away win after applying a stated goal handicap.
 
+**竞彩让球胜平负 Mapping**: Apply the stated home-team handicap to the actual score, then judge win/draw/loss. Formula: `home goals + handicap line - away goals`; positive means `让胜`, zero means `让平`, negative means `让负`. Under a `-1` line, a favorite one-goal win such as `1:0` or `2:1` is `让平`, not `让负`.
+
 **Correct Score Market**: A market on the exact final score.
 
 **Over-Under Market**: A market on whether total goals finish above or below a stated goal line such as 2.5, 2.75, or 3.0.
