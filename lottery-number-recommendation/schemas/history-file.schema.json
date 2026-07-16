@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Lottery history import",
+  "type": "object",
+  "required": ["game", "draws"],
+  "properties": {
+    "game": {"enum": ["dlt", "ssq"]},
+    "draws": {"type": "array", "minItems": 1}
+  }
+}

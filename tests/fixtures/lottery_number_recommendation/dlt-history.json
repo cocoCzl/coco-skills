@@ -1,0 +1,11 @@
+{
+  "game": "dlt",
+  "draws": [
+    {"issue": "07001", "sequence": 1, "draw_date": "2007-05-30", "front": [1, 2, 3, 4, 5], "back": [6, 7]},
+    {"issue": "07002", "sequence": 2, "draw_date": "2007-06-02", "front": [2, 4, 6, 8, 10], "back": [1, 12]},
+    {"issue": "07003", "sequence": 3, "draw_date": "2007-06-04", "front": [3, 6, 9, 12, 15], "back": [2, 11]},
+    {"issue": "07004", "sequence": 4, "draw_date": "2007-06-06", "front": [4, 8, 12, 16, 20], "back": [3, 10]},
+    {"issue": "07005", "sequence": 5, "draw_date": "2007-06-09", "front": [5, 10, 15, 20, 25], "back": [4, 9]},
+    {"issue": "07006", "sequence": 6, "draw_date": "2007-06-11", "front": [6, 11, 16, 21, 26], "back": [5, 8]}
+  ]
+}

@@ -7,6 +7,7 @@
 | Skill | 用途 | 入口 |
 |---|---|---|
 | `football-betting-assistant` | 中文足球竞彩、赛前分析、胜平负、让球、比分、大小球、串关和赛后复盘辅助 | [`football-betting-assistant/SKILL.md`](football-betting-assistant/SKILL.md) |
+| `lottery-number-recommendation` | 大乐透与双色球的完整历史校验、号码推荐和回测辅助 | [`lottery-number-recommendation/SKILL.md`](lottery-number-recommendation/SKILL.md) |
 
 ## 安装使用
 

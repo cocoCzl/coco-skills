@@ -16,6 +16,7 @@ skills-lock.json
 # Generated outputs
 data/
 reports/
+.skill-workspaces/
 
 # IDE project state
 .idea/
