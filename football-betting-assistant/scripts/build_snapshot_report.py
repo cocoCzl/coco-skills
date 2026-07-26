@@ -491,7 +491,7 @@ def main() -> int:
     parser.add_argument("--competition")
     parser.add_argument("--competition-context", type=Path, help="Optional calculated competition_context JSON.")
     parser.add_argument("--topic", default="football-betting")
-    parser.add_argument("--report-out-dir", type=Path, default=Path("reports/football-betting"))
+    parser.add_argument("--report-out-dir", type=Path, default=Path("reports/football-betting-assistant"))
     parser.add_argument("--data-out-dir", type=Path, default=Path("data/football"))
     args = parser.parse_args()
 

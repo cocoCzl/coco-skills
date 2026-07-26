@@ -80,7 +80,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Run offline zero-operation smoke flow against a fixture snapshot.")
     parser.add_argument("snapshot", type=Path)
     parser.add_argument("--request", default="帮我看下北京时间明天的几场世界杯比赛")
-    parser.add_argument("--report-out-dir", type=Path, default=Path("reports/football-betting"))
+    parser.add_argument("--report-out-dir", type=Path, default=Path("reports/football-betting-assistant"))
     parser.add_argument("--data-out-dir", type=Path, default=Path("data/football"))
     args = parser.parse_args()
 

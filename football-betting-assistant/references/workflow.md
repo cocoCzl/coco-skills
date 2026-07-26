@@ -130,7 +130,7 @@ Completed pre-match Single-Match Analysis and Betting Portfolio analysis should 
 2. Do not generate a full formal prediction report when critical fixture or team context is missing. Ask for the missing inputs when the missing context blocks the requested conclusion; otherwise generate only a downgraded snapshot/context report with explicit gaps.
 3. If actual odds/lines are unavailable but fixture and team context are sufficient, generate the report with Data Status `no-actual-odds-lines`. State that Ticket Plans are probability/reference structures, not complete value judgments.
 4. Build structured report JSON according to `schemas/html-report.schema.json`.
-5. Run `scripts/render_html_report.py <json-input> --out-dir reports/football-betting` from the current working directory. The renderer writes one self-contained HTML file and prevents overwriting by suffixing duplicate filenames.
+5. Run `scripts/render_html_report.py <json-input> --out-dir reports/football-betting-assistant` from the current working directory. The renderer writes one self-contained HTML file and prevents overwriting by suffixing duplicate filenames.
 6. Do not generate Markdown reports for completed pre-match analysis.
 7. Keep the chat response to 2-4 concise summary lines plus the HTML path. Do not paste the full report into chat after successful HTML generation.
 8. Treat generated report files as local outputs, not source files to commit.
@@ -142,7 +142,7 @@ Completed pre-match Single-Match Analysis and Betting Portfolio analysis should 
 2. Scan saved prediction snapshots under `data/football/predictions/`. Default to the last 30 days; use all history only when the user explicitly asks.
 3. Confirm actual results from user-provided results, configured result providers, or public/authorized web verification. Preferred configured providers are `FOOTBALL_DATA_API_KEY`, `API_FOOTBALL_KEY`, and `THE_ODDS_API_KEY`; public web lookup is a fallback when tools are available.
 4. Match results to predictions by stable fixture IDs when available; otherwise use match name, kickoff time, competition, and team names. Low-confidence matches must be skipped and listed as `final_result_not_verified` or low-confidence identity, not forced into the review.
-5. Use `scripts/auto_post_match_review.py` to write a review bundle under `data/football/reviews/` and a Chinese HTML Review under `reports/football-betting/`. Use `scripts/post_match_review.py` only for an exact single-snapshot/single-score helper flow.
+5. Use `scripts/auto_post_match_review.py` to write a review bundle under `data/football/reviews/` and a Chinese HTML Review under `reports/football-betting-assistant/`. Use `scripts/post_match_review.py` only for an exact single-snapshot/single-score helper flow.
 6. Compare expected goals, score candidates, odds value, ticket legs, and risk points with the actual outcome.
 7. Separate result-direction, handicap, over-under/total-goals, and exact-score review. A direction hit must not hide a total-goals or score-coverage miss.
 8. Identify model bias, data bias, and portfolio-construction bias separately. If the actual score or handicap outcome was present in score coverage or protection candidates but not in the main ticket, label it a construction error and tighten protection/downgrade rules instead of pretending the model never saw the path. For high-scoring misses, specifically check whether total xG, deep handicap, must-win/goal-difference pressure, or red-card/late-game tail risks were underweighted.

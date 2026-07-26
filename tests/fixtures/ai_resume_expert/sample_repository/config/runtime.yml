@@ -1,0 +1,4 @@
+service:
+  name: fictional-service
+  password: "FAKE_SCANNER_SECRET_VALUE"
+  authorization: "Bearer FAKE_SCANNER_BEARER_VALUE"

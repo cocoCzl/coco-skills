@@ -1,0 +1,177 @@
+{
+  "schema_version": "1.0",
+  "kind": "resume_package",
+  "stage": "markdown_draft",
+  "target": {
+    "role": "Java 后端开发工程师",
+    "level": "高级",
+    "market": "中国大陆",
+    "language": "中文",
+    "version_type": "role_baseline"
+  },
+  "timeline": [
+    {
+      "id": "timeline-employment-1",
+      "type": "employment",
+      "organization": "星河软件（虚构）",
+      "role": "后端开发工程师",
+      "start": "2022.01",
+      "end": "至今",
+      "confirmed_by_user": true
+    }
+  ],
+  "career_facts": [
+    {
+      "id": "fact-employment-1",
+      "fact_type": "employment",
+      "statement": "在星河软件（虚构）担任后端开发工程师。",
+      "status": "confirmed",
+      "employment_id": "timeline-employment-1",
+      "sources": [
+        {
+          "source_id": "source-user-1",
+          "type": "user_statement",
+          "locator": "本次职业访谈：任职时间线"
+        }
+      ],
+      "ownership": {
+        "status": "confirmed",
+        "confirmed_by_user": true,
+        "confirmation_source_id": "source-user-1"
+      },
+      "disclosure": {
+        "status": "sanitized",
+        "confirmed_by_user": true,
+        "sanitized_statement": "在某企业软件公司担任后端开发工程师。"
+      },
+      "conflict": {
+        "status": "none"
+      }
+    },
+    {
+      "id": "fact-contribution-1",
+      "fact_type": "personal_contribution",
+      "statement": "设计并实现异步任务状态追踪与异常记录机制。",
+      "status": "confirmed",
+      "employment_id": "timeline-employment-1",
+      "project_id": "project-task-platform",
+      "sources": [
+        {
+          "source_id": "source-user-2",
+          "type": "user_statement",
+          "locator": "本次职业访谈：异步任务项目"
+        },
+        {
+          "source_id": "source-code-1",
+          "type": "code",
+          "locator": "授权项目仓库：任务模块（仅项目事实线索）"
+        }
+      ],
+      "ownership": {
+        "status": "confirmed",
+        "confirmed_by_user": true,
+        "confirmation_source_id": "source-user-2"
+      },
+      "disclosure": {
+        "status": "approved",
+        "confirmed_by_user": true
+      },
+      "star": {
+        "situation": "耗时任务阻塞接口且异常难以追踪。",
+        "task": "改造任务执行与状态记录机制。",
+        "action": "使用独立线程池执行任务，并记录状态与异常上下文。",
+        "result": "接口可以快速返回，并增强了问题定位的可追踪性。",
+        "confirmed_by_user": true
+      },
+      "quantification": {
+        "kind": "qualitative",
+        "confirmed_by_user": true
+      },
+      "conflict": {
+        "status": "none"
+      }
+    },
+    {
+      "id": "fact-skill-java",
+      "fact_type": "skill",
+      "statement": "在多个后端项目中持续使用 Java 完成服务开发和问题排查。",
+      "status": "confirmed",
+      "sources": [
+        {
+          "source_id": "source-user-3",
+          "type": "user_statement",
+          "locator": "本次职业访谈：技能使用情况"
+        }
+      ],
+      "ownership": {
+        "status": "confirmed",
+        "confirmed_by_user": true,
+        "confirmation_source_id": "source-user-3"
+      },
+      "disclosure": {
+        "status": "approved",
+        "confirmed_by_user": true
+      },
+      "conflict": {
+        "status": "none"
+      }
+    }
+  ],
+  "claims": [
+    {
+      "id": "claim-experience-1",
+      "text": "设计并实现异步任务状态追踪与异常记录机制，使接口能够快速返回并增强故障定位的可追踪性。",
+      "claim_type": "experience",
+      "included": true,
+      "fact_ids": ["fact-contribution-1"],
+      "ownership_required": true,
+      "ownership_confirmed": true,
+      "disclosure_status": "approved",
+      "star": {
+        "role": "任务执行模块后端开发者",
+        "action": "使用独立线程池，并补充状态和异常记录。",
+        "result": "接口快速返回，问题定位更可追踪。",
+        "confirmed_by_user": true
+      },
+      "quantification": {
+        "kind": "qualitative",
+        "confirmed_by_user": true
+      },
+      "interview_defensible": true
+    }
+  ],
+  "skills": [
+    {
+      "name": "Java",
+      "proficiency": "proficient",
+      "fact_ids": ["fact-skill-java", "fact-contribution-1"],
+      "confirmed_by_user": true
+    }
+  ],
+  "evidence_trace": [
+    {
+      "claim_id": "claim-experience-1",
+      "fact_ids": ["fact-contribution-1"],
+      "ownership_confirmed": true,
+      "disclosure_status": "approved",
+      "quantification_confirmed": true,
+      "note": "项目事实由代码提供线索，个人行动由使用者明确确认。"
+    }
+  ],
+  "conflicts": [],
+  "confidentiality_blockers": [],
+  "markdown": {
+    "confirmed_by_user": false,
+    "self_review": {
+      "facts": true,
+      "target_alignment": true,
+      "confidentiality": true,
+      "duplication": true,
+      "length": true,
+      "defensibility": true
+    }
+  },
+  "contact": {
+    "confirmed_by_user": false
+  }
+}

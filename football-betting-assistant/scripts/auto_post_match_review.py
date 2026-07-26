@@ -593,7 +593,7 @@ def main() -> int:
     parser.add_argument("--predictions-dir", type=Path, default=Path("data/football/predictions"))
     parser.add_argument("--results-input", type=Path, help="Optional local match_results JSON for tests or user-provided results.")
     parser.add_argument("--review-out-dir", type=Path, default=Path("data/football/reviews"))
-    parser.add_argument("--report-out-dir", type=Path, default=Path("reports/football-betting"))
+    parser.add_argument("--report-out-dir", type=Path, default=Path("reports/football-betting-assistant"))
     parser.add_argument("--window-days", type=int, default=DEFAULT_LOOKBACK_DAYS)
     parser.add_argument("--all-history", action="store_true")
     parser.add_argument("--now", help="Override current time for deterministic tests.")

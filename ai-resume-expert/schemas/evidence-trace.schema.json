@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evidence-trace.schema.json",
+  "title": "AI Resume Expert standalone evidence trace",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "kind", "facts", "claims", "entries"],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "kind": { "const": "evidence_trace" },
+    "facts": {
+      "type": "array",
+      "items": { "$ref": "evidence-record.schema.json" }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["id", "claim_type", "included", "fact_ids"],
+        "properties": {
+          "id": { "type": "string", "minLength": 1 },
+          "claim_type": {
+            "type": "string",
+            "enum": ["experience", "summary", "skill", "employment", "education", "project_fact", "other"]
+          },
+          "included": { "type": "boolean" },
+          "fact_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          }
+        }
+      }
+    },
+    "entries": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "claim_id",
+          "fact_ids",
+          "ownership_confirmed",
+          "disclosure_status",
+          "quantification_confirmed"
+        ],
+        "properties": {
+          "claim_id": { "type": "string", "minLength": 1 },
+          "fact_ids": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": { "type": "string", "minLength": 1 }
+          },
+          "ownership_confirmed": { "type": "boolean" },
+          "disclosure_status": { "type": "string", "enum": ["approved", "sanitized", "blocked"] },
+          "quantification_confirmed": { "type": "boolean" },
+          "note": { "type": "string", "maxLength": 1000 }
+        }
+      }
+    }
+  }
+}

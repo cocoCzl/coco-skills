@@ -1,0 +1,3 @@
+# Optional local PDF renderer used by ai-resume-expert and the repository PDF CI job.
+# Core Skill scripts keep their Python standard-library-only contract.
+weasyprint==66.0

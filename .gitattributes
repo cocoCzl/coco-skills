@@ -1,0 +1,3 @@
+# This fixture is a valid binary PDF. Keep Git from normalizing or text-diffing
+# its internal whitespace and object table.
+tests/fixtures/ai_resume_expert/resumes/sample_resume.pdf binary

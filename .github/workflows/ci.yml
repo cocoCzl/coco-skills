@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  core:
+    name: Core checks (Python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Check skill package structure
+        run: python -B scripts/check_all_skills.py
+      - name: Run all unit tests
+        run: python -B -m unittest discover -s tests -p 'test_*.py'
+
+  pdf-qa:
+    name: PDF QA (Ubuntu 24.04, Python 3.12)
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install local PDF rendering and validation stack
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            fontconfig \
+            fonts-noto-cjk \
+            libcairo2 \
+            libffi-dev \
+            libgdk-pixbuf-2.0-0 \
+            libpango-1.0-0 \
+            libpangocairo-1.0-0 \
+            poppler-utils \
+            shared-mime-info
+          python -m pip install --upgrade pip
+          python -m pip install --requirement ai-resume-expert/requirements-pdf.txt
+          python -m pip check
+      - name: Require a functional PDF stack
+        run: |
+          command -v weasyprint
+          command -v pdfinfo
+          command -v pdftotext
+          command -v pdftoppm
+          command -v pdffonts
+          fc-match "Noto Sans CJK SC"
+          python -B - <<'PY'
+          import runpy
+
+          namespace = runpy.run_path("tests/ai_resume_expert/test_pdf_pipeline.py")
+          if not namespace["LOCAL_PDF_STACK"]:
+              raise SystemExit("ai-resume-expert PDF renderer or Poppler stack is unavailable")
+          print("Functional ai-resume-expert PDF stack confirmed.")
+          PY
+      - name: Run PDF integration and validation tests
+        run: python -B -m unittest discover -s tests/ai_resume_expert -p 'test_pdf_pipeline.py' -v

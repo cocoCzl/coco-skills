@@ -18,7 +18,7 @@
 | 只支持普通聊天 | 只能半手动 | 用户需要自己提供比赛、赔率、盘口、伤停、近期状态等信息 |
 
 最低可用条件：软件必须能读取或粘贴 `SKILL.md` 的规则。  
-完整体验条件：软件能读取整个 skill 目录、能联网核验公开数据、能运行本地 Python 脚本，并能在当前项目下写入 `reports/football-betting/` 和 `data/football/`。
+完整体验条件：软件能读取整个 skill 目录、能联网核验公开数据、能运行本地 Python 脚本，并能在当前项目下写入 `reports/football-betting-assistant/` 和 `data/football/`。
 
 ## Codex 安装
 

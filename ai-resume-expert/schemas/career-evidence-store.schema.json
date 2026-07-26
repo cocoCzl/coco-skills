@@ -1,0 +1,74 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "career-evidence-store.schema.json",
+  "title": "AI Resume Expert career evidence store",
+  "description": "An opt-in, target-role-independent local store containing only confirmed, sanitized career facts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "store_id",
+    "created_at",
+    "updated_at",
+    "target_independent",
+    "facts"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "kind": { "const": "career_evidence_store" },
+    "store_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "updated_at": { "type": "string", "format": "date-time" },
+    "target_independent": { "const": true },
+    "facts": {
+      "type": "array",
+      "items": {
+        "allOf": [
+          { "$ref": "evidence-record.schema.json" },
+          {
+            "properties": {
+              "status": { "const": "confirmed" },
+              "disclosure": {
+                "properties": {
+                  "status": { "enum": ["approved", "sanitized"] },
+                  "confirmed_by_user": { "const": true }
+                },
+                "required": ["status", "confirmed_by_user"]
+              },
+              "ownership": {
+                "properties": {
+                  "status": { "enum": ["confirmed", "not_applicable"] },
+                  "confirmed_by_user": { "const": true }
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  },
+  "allOf": [
+    {
+      "properties": {
+        "facts": {
+          "items": {
+            "if": {
+              "properties": {
+                "disclosure": {
+                  "properties": { "status": { "const": "sanitized" } },
+                  "required": ["status"]
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "disclosure": { "required": ["sanitized_statement"] }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

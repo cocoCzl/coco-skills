@@ -257,7 +257,7 @@ python3 football-betting-assistant/scripts/build_snapshot_report.py \
   --date tomorrow \
   --competition 世界杯 \
   --topic "明天世界杯竞彩分析" \
-  --report-out-dir reports/football-betting \
+  --report-out-dir reports/football-betting-assistant \
   --data-out-dir data/football
 ```
 
@@ -266,12 +266,12 @@ python3 football-betting-assistant/scripts/build_snapshot_report.py \
 ```bash
 python3 football-betting-assistant/scripts/render_html_report.py \
   path/to/report-input.json \
-  --out-dir reports/football-betting
+  --out-dir reports/football-betting-assistant
 ```
 
 生成物默认不应提交：
 
-- `reports/football-betting/*.html`
+- `reports/football-betting-assistant/*.html`
 - `data/football/snapshots/*.json`
 - `data/football/report-inputs/*.html-report.json`
 - `data/football/predictions/*.prediction.json`
@@ -296,7 +296,7 @@ python3 football-betting-assistant/scripts/build_snapshot_report.py \
   --competition 世界杯 \
   --competition-context data/football/competition-context/worldcup-context.json \
   --topic "明天世界杯竞彩分析" \
-  --report-out-dir reports/football-betting \
+  --report-out-dir reports/football-betting-assistant \
   --data-out-dir data/football
 ```
 
@@ -339,7 +339,7 @@ python3 football-betting-assistant/scripts/backtest_predictions.py examples/foot
 python3 football-betting-assistant/scripts/zero_operation_smoke.py \
   tests/fixtures/football_betting_assistant/football-snapshot-sporttery.json \
   --request "帮我看下北京时间明天的几场世界杯比赛" \
-  --report-out-dir reports/football-betting \
+  --report-out-dir reports/football-betting-assistant \
   --data-out-dir data/football
 ```
 
@@ -349,7 +349,7 @@ python3 football-betting-assistant/scripts/zero_operation_smoke.py \
 python3 football-betting-assistant/scripts/auto_post_match_review.py \
   --predictions-dir data/football/predictions \
   --review-out-dir data/football/reviews \
-  --report-out-dir reports/football-betting
+  --report-out-dir reports/football-betting-assistant
 ```
 
 如果用户已经有赛果 JSON，可作为本地输入，适合离线复现或测试：
@@ -395,7 +395,7 @@ python3 football-betting-assistant/scripts/auto_post_match_review.py \
 
 常见组合候选包括 `模型最稳主单`、`让球/胜平负方向单`、`大小球/总进球单`、`比分4串1`、比分覆盖、`混合过关单`、`备选/替换` 和 `可选小组合`。精确比分串关最多 4 场；胜平负/让球胜平负最多 8 场；大小球/总进球最多 8 场。模型可以少选，不强行凑满。
 
-完成赛前单场或多场分析时，默认生成一个自包含 HTML 报告到 `reports/football-betting/`，并在聊天里只返回 2-4 行摘要、HTML 路径和 prediction snapshot 路径。除非用户明确要求，不生成 Markdown 报告。
+完成赛前单场或多场分析时，默认生成一个自包含 HTML 报告到 `reports/football-betting-assistant/`，并在聊天里只返回 2-4 行摘要、HTML 路径和 prediction snapshot 路径。除非用户明确要求，不生成 Markdown 报告。
 
 ## ✅ 本地校验
 

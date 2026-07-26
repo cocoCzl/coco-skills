@@ -239,7 +239,7 @@ Required top-level sections:
 HTML Report rules:
 
 - Generate HTML only for completed pre-match analysis; do not create Markdown reports.
-- Save under the current working directory's `reports/football-betting/`.
+- Save under the current working directory's `reports/football-betting-assistant/`.
 - Chat output after generation is only a concise summary plus the HTML path.
 - If actual odds/lines are unavailable, use Data Status `no-actual-odds-lines`, show a top-of-report warning `竞彩赔率/盘口状态：未获取或未验证`, and label Ticket Plans as probability/reference structures rather than full value judgments.
 - Never invent odds, handicap lines, over-under lines, total-goals prices, or correct-score prices. Missing market data must stay blank, `未获取`, `未验证`, or `不可用`.
@@ -248,7 +248,7 @@ HTML Report rules:
 
 ## Post-Match Review
 
-Default post-match reviews should be generated as one Chinese HTML Review through `scripts/auto_post_match_review.py` when local execution is available. Save the HTML under `reports/football-betting/` and the structured review bundle under `data/football/reviews/`. Use this structure for each reviewed match:
+Default post-match reviews should be generated as one Chinese HTML Review through `scripts/auto_post_match_review.py` when local execution is available. Save the HTML under `reports/football-betting-assistant/` and the structured review bundle under `data/football/reviews/`. Use this structure for each reviewed match:
 
 ```markdown
 ## 赛后复盘：[比赛或组合]

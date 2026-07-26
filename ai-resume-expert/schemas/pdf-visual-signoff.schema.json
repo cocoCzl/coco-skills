@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "pdf-visual-signoff.schema.json",
+  "title": "AI Resume Expert PDF visual signoff",
+  "description": "A user-confirmed review binding a pending automatic validation report to the reviewed PDF, Markdown, and preview files.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "kind",
+    "confirmed_by_user",
+    "confirmed_at",
+    "automatic_validation_report",
+    "pdf",
+    "markdown",
+    "preview_resources"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "kind": { "const": "pdf_visual_signoff" },
+    "confirmed_by_user": { "const": true },
+    "confirmed_at": { "type": "string", "format": "date-time" },
+    "automatic_validation_report": { "$ref": "#/$defs/resource" },
+    "pdf": { "$ref": "#/$defs/resource" },
+    "markdown": { "$ref": "#/$defs/resource" },
+    "preview_resources": {
+      "type": "array",
+      "minItems": 2,
+      "items": { "$ref": "#/$defs/preview_resource" },
+      "allOf": [
+        { "contains": { "properties": { "kind": { "const": "color_page" } }, "required": ["kind"] } },
+        { "contains": { "properties": { "kind": { "const": "grayscale_page" } }, "required": ["kind"] } }
+      ]
+    }
+  },
+  "$defs": {
+    "resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "sha256", "size_bytes"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+        "size_bytes": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "preview_resource": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "page_index", "path", "sha256", "size_bytes"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["color_page", "grayscale_page"] },
+        "page_index": { "type": "integer", "minimum": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "sha256": { "type": "string", "pattern": "^[a-fA-F0-9]{64}$" },
+        "size_bytes": { "type": "integer", "minimum": 0 }
+      }
+    }
+  }
+}

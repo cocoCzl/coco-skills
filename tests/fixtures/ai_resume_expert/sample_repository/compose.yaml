@@ -1,0 +1,4 @@
+services:
+  fictional-app:
+    image: eclipse-temurin:21-jre
+    command: ["java", "-version"]

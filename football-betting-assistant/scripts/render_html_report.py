@@ -513,7 +513,7 @@ def render_to_file(document: dict[str, Any], out_dir: Path) -> Path:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Render a football betting HTML report from JSON")
     parser.add_argument("input", type=Path, help="Path to html-report JSON")
-    parser.add_argument("--out-dir", type=Path, default=Path.cwd() / "reports" / "football-betting")
+    parser.add_argument("--out-dir", type=Path, default=Path.cwd() / "reports" / "football-betting-assistant")
     args = parser.parse_args(argv)
     try:
         document = json.loads(args.input.read_text(encoding="utf-8"))

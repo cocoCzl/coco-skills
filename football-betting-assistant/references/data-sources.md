@@ -69,7 +69,7 @@ python3 football-betting-assistant/scripts/build_snapshot_report.py \
   --date tomorrow \
   --competition 世界杯 \
   --topic "明天世界杯竞彩分析" \
-  --report-out-dir reports/football-betting \
+  --report-out-dir reports/football-betting-assistant \
   --data-out-dir data/football
 ```
 

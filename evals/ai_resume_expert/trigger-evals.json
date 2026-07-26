@@ -1,0 +1,126 @@
+{
+  "skill_name": "ai-resume-expert",
+  "purpose": "Trigger-precision review for the SKILL.md description. These are near-neighbor queries, not full output-quality evaluations.",
+  "queries": [
+    {
+      "id": "trigger-01",
+      "query": "我想投杭州的 Java 高级后端工程师，做过订单履约和对账任务，帮我从零写中文简历。",
+      "should_trigger": true,
+      "reason": "中国大陆技术岗位的从零简历生成。"
+    },
+    {
+      "id": "trigger-02",
+      "query": "这是我刚上传的 Markdown 简历，目标 SRE，先帮我按致命、重大、一般问题做诊断，不要直接重写。",
+      "should_trigger": true,
+      "reason": "技术岗位原简历诊断。"
+    },
+    {
+      "id": "trigger-03",
+      "query": "我授权静态读取 ./payment-platform，不读 Git、不运行代码；结合仓库和我的经历为 Go 后端岗位整理项目证据。",
+      "should_trigger": true,
+      "reason": "授权代码库辅助的技术简历取证。"
+    },
+    {
+      "id": "trigger-04",
+      "query": "给我这份数据工程师简历做 JD 定制，但没做过 Flink 的地方不要硬塞关键词。",
+      "should_trigger": true,
+      "reason": "证据优先的 JD 定制。"
+    },
+    {
+      "id": "trigger-05",
+      "query": "我的 AI Agent 应用工程师 Markdown 已确认，联系方式也补齐了，帮我本地导出 ATS 友好的 PDF。",
+      "should_trigger": true,
+      "reason": "确认后的技术简历 PDF 交付。"
+    },
+    {
+      "id": "trigger-06",
+      "query": "我从 Android 转 AI 应用工程，帮我挑哪些公司项目和开源项目放到一页中文简历里。",
+      "should_trigger": true,
+      "reason": "技术转型简历的项目取舍。"
+    },
+    {
+      "id": "trigger-07",
+      "query": "我没有性能指标，但要投前端工程师，怎样把真实的可维护性工作写到简历里？",
+      "should_trigger": true,
+      "reason": "技术岗位真实成果表达。"
+    },
+    {
+      "id": "trigger-08",
+      "query": "帮我检查这份后端技术负责人的简历里哪些强表述经不起面试追问。",
+      "should_trigger": true,
+      "reason": "简历陈述的面试可辩护性检查。"
+    },
+    {
+      "id": "trigger-09",
+      "query": "我想把 Java、Kubernetes、Rust 全都塞进 ATS，哪怕我没做过也行。",
+      "should_trigger": true,
+      "reason": "技术简历中的关键词堆砌风险应由本 Skill 拦截。"
+    },
+    {
+      "id": "trigger-10",
+      "query": "帮我把这份 iOS 工程师简历优化成适合中国大陆中级岗位投递的版本。",
+      "should_trigger": true,
+      "reason": "首版支持的客户端技术岗位简历优化。"
+    },
+    {
+      "id": "no-trigger-01",
+      "query": "我在申请博士后，帮我把论文、引用、研究计划和教学经历写成英文 academic CV。",
+      "should_trigger": false,
+      "reason": "学术 CV 不在本 Skill 范围内。"
+    },
+    {
+      "id": "no-trigger-02",
+      "query": "根据我的后端简历写一封投递字节跳动的求职信，语气热情一点。",
+      "should_trigger": false,
+      "reason": "求职信不在本 Skill 范围内。"
+    },
+    {
+      "id": "no-trigger-03",
+      "query": "把我的工作经历改写成 LinkedIn About 和 3 条动态。",
+      "should_trigger": false,
+      "reason": "LinkedIn 内容不在本 Skill 范围内。"
+    },
+    {
+      "id": "no-trigger-04",
+      "query": "把 downloads/resume.pdf 转成可编辑的 Word，版式一模一样。",
+      "should_trigger": false,
+      "reason": "纯 PDF/Word 格式转换应由文档转换工具处理。"
+    },
+    {
+      "id": "no-trigger-05",
+      "query": "给我做一个个人作品集网站，展示 React 项目和 GitHub 贡献。",
+      "should_trigger": false,
+      "reason": "个人网站和作品集构建不在本 Skill 范围内。"
+    },
+    {
+      "id": "no-trigger-06",
+      "query": "帮我在招聘网站筛选上海 Java 岗位并自动投递。",
+      "should_trigger": false,
+      "reason": "职位搜索和自动投递不在本 Skill 范围内。"
+    },
+    {
+      "id": "no-trigger-07",
+      "query": "审查这个 Spring Boot 仓库的 SQL 注入和鉴权漏洞，给我安全整改清单。",
+      "should_trigger": false,
+      "reason": "代码安全审查不是简历工作流。"
+    },
+    {
+      "id": "no-trigger-08",
+      "query": "把这份公司 wiki 的 Markdown 表格排成漂亮的 PDF，不改内容。",
+      "should_trigger": false,
+      "reason": "通用文档排版和 PDF 转换不属于简历工作流。"
+    },
+    {
+      "id": "no-trigger-09",
+      "query": "我是一名护士，帮我针对临床护理岗位写一份专业中文简历。",
+      "should_trigger": false,
+      "reason": "非技术岗位的职业专家优化不在首版深度范围内。"
+    },
+    {
+      "id": "no-trigger-10",
+      "query": "为我现有的算法论文生成 BibTeX、摘要和投稿 cover letter。",
+      "should_trigger": false,
+      "reason": "学术发表材料不属于技术求职简历。"
+    }
+  ]
+}

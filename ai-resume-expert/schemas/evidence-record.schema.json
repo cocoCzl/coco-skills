@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "evidence-record.schema.json",
+  "title": "AI Resume Expert evidence record",
+  "description": "A target-role-independent career fact or evidence record. Project facts never imply personal contribution.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "fact_type",
+    "statement",
+    "status",
+    "sources",
+    "ownership",
+    "disclosure",
+    "conflict"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "fact_type": {
+      "type": "string",
+      "enum": [
+        "employment",
+        "education",
+        "project_fact",
+        "personal_contribution",
+        "skill",
+        "star_evidence",
+        "quantification",
+        "award",
+        "certification",
+        "other"
+      ]
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000,
+      "description": "A sanitized fact, never a source-code excerpt or JD-tailored resume sentence."
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "observed_project_fact",
+        "confirmed",
+        "pending_confirmation",
+        "information_gap",
+        "conflict",
+        "evidence_gap",
+        "rejected"
+      ]
+    },
+    "employment_id": { "type": "string", "minLength": 1 },
+    "project_id": { "type": "string", "minLength": 1 },
+    "resume_eligible": {
+      "type": "boolean",
+      "description": "Observed repository facts remain false until contribution, disclosure, and delivery gates are satisfied."
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/source" }
+    },
+    "ownership": { "$ref": "#/$defs/ownership" },
+    "disclosure": { "$ref": "#/$defs/disclosure" },
+    "star": { "$ref": "#/$defs/star" },
+    "quantification": { "$ref": "#/$defs/quantification" },
+    "conflict": { "$ref": "#/$defs/conflict" },
+    "tags": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": { "type": "string", "minLength": 1, "maxLength": 80 }
+    }
+  },
+  "$defs": {
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_id", "type", "locator"],
+      "properties": {
+        "source_id": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "type": {
+          "type": "string",
+          "enum": [
+            "user_statement",
+            "original_resume",
+            "code",
+            "project_document",
+            "git_hint",
+            "calculation",
+            "public_portfolio",
+            "other"
+          ]
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000,
+          "description": "A source hint such as a file and section, not copied source text."
+        },
+        "observed_at": { "type": "string", "format": "date-time" },
+        "note": { "type": "string", "maxLength": 500 }
+      }
+    },
+    "ownership": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "confirmed_by_user"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["confirmed", "pending", "not_applicable", "rejected"]
+        },
+        "confirmed_by_user": { "type": "boolean" },
+        "confirmed_at": { "type": "string", "format": "date-time" },
+        "confirmation_source_id": { "type": "string", "minLength": 1 }
+      }
+    },
+    "disclosure": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["approved", "sanitized", "needs_redaction", "blocked", "unknown"]
+        },
+        "sanitized_statement": { "type": "string", "minLength": 1, "maxLength": 4000 },
+        "confirmed_by_user": { "type": "boolean" },
+        "note": { "type": "string", "maxLength": 500 }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "status": { "enum": ["approved", "sanitized"] } },
+            "required": ["status"]
+          },
+          "then": {
+            "required": ["confirmed_by_user"],
+            "properties": { "confirmed_by_user": { "const": true } }
+          }
+        },
+        {
+          "if": {
+            "properties": { "status": { "const": "sanitized" } },
+            "required": ["status"]
+          },
+          "then": { "required": ["sanitized_statement"] }
+        }
+      ]
+    },
+    "star": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["situation", "task", "action", "result", "confirmed_by_user"],
+      "properties": {
+        "situation": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "task": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "action": { "type": "string", "minLength": 1, "maxLength": 3000 },
+        "result": { "type": "string", "minLength": 1, "maxLength": 2000 },
+        "confirmed_by_user": { "type": "boolean" }
+      }
+    },
+    "quantification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "confirmed_by_user"],
+      "properties": {
+        "kind": { "type": "string", "enum": ["numeric", "range", "qualitative", "none"] },
+        "value": { "type": ["number", "string"] },
+        "unit": { "type": "string", "maxLength": 80 },
+        "basis": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "calculation": { "type": "string", "maxLength": 1000 },
+        "source_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "confirmed_by_user": { "type": "boolean" }
+      }
+    },
+    "conflict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string", "enum": ["none", "unresolved", "resolved"] },
+        "conflicting_source_ids": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": { "type": "string", "minLength": 1 }
+        },
+        "resolution": { "type": "string", "minLength": 1, "maxLength": 1000 },
+        "resolved_by_user": { "type": "boolean" }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "status": { "const": "resolved" } },
+            "required": ["status"]
+          },
+          "then": {
+            "required": ["resolution", "resolved_by_user"],
+            "properties": { "resolved_by_user": { "const": true } }
+          }
+        }
+      ]
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "fact_type": { "const": "personal_contribution" } },
+        "required": ["fact_type"]
+      },
+      "then": {
+        "properties": {
+          "ownership": {
+            "properties": {
+              "status": { "const": "confirmed" },
+              "confirmed_by_user": { "const": true }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": { "status": { "const": "conflict" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "conflict": {
+            "properties": { "status": { "const": "unresolved" } }
+          }
+        }
+      }
+    }
+  ]
+}

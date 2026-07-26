@@ -42,6 +42,8 @@ python3 lottery-number-recommendation/scripts/lottery_skill.py sync
 
 脚本默认输出结构化 JSON；面向用户时使用 `--output text` 获得稳定、简洁的中文结果，agent 直接转发该文本，不自行改写数据范围、免责声明或统计含义。号码两位数展示：大乐透为“前区｜后区”，双色球为“红球｜蓝球”。
 
+默认只在聊天中返回结果，不额外落盘。用户明确要求把推荐或回测保存为文件时，写入当前工作目录的 `reports/lottery-number-recommendation/`，不要创建通用 `output/` 或写入 Skill 包；官方历史与审计运行数据仍保存在 `data/lottery-number-recommendation/`。
+
 ```bash
 # 每次 recommend 会自动同步；两种彩票各 1 注随机未出现组合
 python3 lottery-number-recommendation/scripts/lottery_skill.py recommend

@@ -10,12 +10,16 @@ __pycache__/
 .agent/
 .agents/
 .claude/
+.codex/
 .pi/
+.venv/
+.venv-*/
 skills-lock.json
 
 # Generated outputs
 data/
 reports/
+output/
 .skill-workspaces/
 
 # IDE project state
