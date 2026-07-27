@@ -186,7 +186,11 @@ class PdfPipelineTests(unittest.TestCase):
         excluded = excluded or set()
         bin_dir = directory / "isolated-bin"
         bin_dir.mkdir()
-        for name in ("soffice", "pdftotext", "pdfinfo", "pdftoppm", "pdffonts"):
+        # Keep every renderer that the integration-stack probe accepts.  A
+        # GitHub runner may expose LibreOffice as ``libreoffice`` rather than
+        # ``soffice``, or have only WeasyPrint available.  This helper is used
+        # to remove a validation capability, not to remove rendering itself.
+        for name in ("soffice", "libreoffice", "weasyprint", "pdftotext", "pdfinfo", "pdftoppm", "pdffonts"):
             if name in excluded:
                 continue
             resolved = shutil.which(name)
