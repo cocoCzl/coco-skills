@@ -30,7 +30,7 @@
 | AC-22 | AIRES-013/014 | 私有源码与内部标识不进入产物 | Eval 25、36；`test_repository_scan.py` |
 | AC-23 | AIRES-016/018 | 原简历只读、优化稿另存 | Eval 28；`test_resume_extraction.py` |
 | AC-24 | AIRES-005 | 项目排序、理由、淘汰与用户决定 | Eval 10 |
-| AC-25 | AIRES-005 | 公司核心项目归入任职经历 | Eval 3、10 |
+| AC-25 | AIRES-005 | 工作与重点项目独立呈现且公司归属清晰 | Eval 3、10 |
 | AC-26 | AIRES-005/011 | 转型证明项目明确来源 | Eval 12 |
 | AC-27 | AIRES-002/007～012 | 技能与经历互证 | Eval 3、9、13～22 |
 | AC-28 | AIRES-002 | STAR 用于核实、正文不显示标签 | Eval 3 |

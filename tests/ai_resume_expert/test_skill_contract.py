@@ -175,6 +175,26 @@ class SkillReleaseContractTests(unittest.TestCase):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, text)
 
+    def test_experienced_candidate_structure_requires_separate_star_sections(self) -> None:
+        skill = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        rules = (SKILL / "references" / "common-resume-rules.md").read_text(encoding="utf-8")
+        gates = (SKILL / "references" / "output-and-quality-gates.md").read_text(encoding="utf-8")
+        for text in (skill, rules, gates):
+            with self.subTest(source=text[:40]):
+                self.assertIn("重点项目经历", text)
+                self.assertIn("STAR", text)
+        self.assertIn("默认独立设置**工作经历**与**重点项目经历**两章", skill)
+        self.assertIn("每段保留任职默认写 2～4 条", skill)
+        self.assertIn("首次交付必须", skill)
+
+    def test_senior_backend_example_uses_separate_sections_and_no_usage_notes(self) -> None:
+        sample = (EXAMPLES / "sample-resume.md").read_text(encoding="utf-8")
+        self.assertIn("## 工作经历", sample)
+        self.assertIn("## 重点项目经历", sample)
+        self.assertLess(sample.index("## 工作经历"), sample.index("## 重点项目经历"))
+        self.assertIn("｜星河软件（虚构）｜2023.03—至今", sample)
+        self.assertNotIn("使用说明（不属于简历正文）", sample)
+
 
 if __name__ == "__main__":
     unittest.main()

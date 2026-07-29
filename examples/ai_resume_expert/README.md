@@ -8,7 +8,7 @@
 - `backend-jd.md`：用于演示 JD 要求覆盖的虚构招聘描述。
 - `legacy-resume.md`：用于诊断和优化演示的故意写差的原简历。
 - `multi-project-inventory.md`：用于项目排序与淘汰理由演示的虚构多项目清单。
-- `sample-resume.md`：达到最低证据门槛后的岗位基准版 Markdown 示例。
+- `sample-resume.md`：达到最低证据门槛后的资深后端岗位基准版 Markdown 初稿，演示独立的工作经历与重点项目经历，以及两章各自的 STAR 写法。
 - `prompts.md`：四种输入模式和关键失败路径的自然语言请求示例。
 - `visual-review-graduate.md`：应届/实习一页视觉样本源文件。
 - `visual-review-transition.md`：Java 转 AI 应用的两页视觉样本源文件。
