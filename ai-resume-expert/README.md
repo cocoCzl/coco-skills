@@ -11,6 +11,7 @@
 - 合并用户描述、代码/文档、原简历和 JD，处理重复、冲突与保密披露。
 - 没有 JD 时生成岗位基准版；有 JD 时生成只使用证据化关键词的定制版。
 - 给出项目入选建议、证据追踪表和面试可辩护性追问。
+- 首次取得保存授权后，将 Markdown 初稿与适用的审查材料版本化归档到当前工作目录的 `reports/ai-resume-expert/`；不保存逐轮聊天、原始私密材料或职业证据库。
 - 在 Markdown 明确确认后，本地生成单栏、1～2 页、现代技术型极简 PDF，生成页面预览并执行自动技术验收；只有得到用户明确视觉签收的 PDF 才可交付。
 - 经用户选择后，把已确认事实保存到 Skill 包以外的本地职业证据库，供下一份 JD 复用。
 
@@ -91,7 +92,7 @@ Skill 的专业判断由当前 Agent / 大模型执行，因此“大模型可�
 3. 整理项目事实、用户确认事实、待确认素材、信息缺口、冲突和证据差距。
 4. 一次询问一个最关键问题；用户也可要求批量结构化问卷。
 5. 对多个项目给出 2～4 个入选建议、排序和淘汰理由；多段相关经历均有清晰项目证据时，可采用最近任职 2～3 个、其他相关任职各 1 个的 4～5 项结构，由用户决定。
-6. 达到最低证据门槛后才生成完整 Markdown 初稿。
+6. 达到最低证据门槛后才生成完整 Markdown 初稿；首次交付前取得一次归档授权，随后在同一工作区将正式交付物保存到版本化 `reports/ai-resume-expert/` 目录。
 7. 自审事实、岗位、STAR、重复、篇幅、保密和面试可辩护性。
 8. 用户确认事实、披露、联系方式和定稿后，才生成 PDF。
 
@@ -203,7 +204,7 @@ export PATH="$PWD/.venv-ai-resume-expert/bin:$PATH"
 
 最终 Markdown 使用稳定的基础子集：标题、段落、一级列表、加粗、斜体、行内代码、标准链接和分隔线。表格、嵌套列表、图片、原始 HTML 与引用块会先改写为这些结构，避免未经支持的复杂版式在本地 PDF 中静默退化。
 
-默认生成目录是当前工作目录下的 `reports/ai-resume-expert/`。每次生成使用独立版本子目录，保留 Markdown、可打印 HTML、PDF、验收报告、彩色/灰度页面预览和（如已确认）视觉签收 JSON；不会再创建 `output/`。联系方式中的 GitHub、技术博客和个人主页使用短标签链接，避免裸 URL 破坏页首排版。
+默认生成目录是当前工作目录下的 `reports/ai-resume-expert/`。得到一次明确归档授权后，初稿和适用的诊断、修改对照、证据追踪、项目取舍、JD 覆盖、面试追问等正式文本交付物会保存到独立的 `draft-###` 目录；确认后的渲染流程另建版本目录，保留 Markdown、可打印 HTML、PDF、验收报告、彩色/灰度页面预览和（如已确认）视觉签收 JSON。不会保存聊天逐轮提问、原始简历或原始公司材料，也不会再创建 `output/`。联系方式中的 GitHub、技术博客和个人主页使用短标签链接，避免裸 URL 破坏页首排版。
 
 PDF 从生成到可交付必须经过三个门槛：
 
@@ -257,6 +258,7 @@ python3 ai-resume-expert/scripts/scan_repository.py --help
 python3 ai-resume-expert/scripts/extract_resume.py --help
 python3 ai-resume-expert/scripts/validate_resume_package.py --help
 python3 ai-resume-expert/scripts/career_store.py --help
+python3 ai-resume-expert/scripts/archive_resume_artifacts.py --help
 python3 ai-resume-expert/scripts/render_resume.py --help
 python3 ai-resume-expert/scripts/validate_pdf.py --help
 python3 ai-resume-expert/scripts/record_pdf_visual_signoff.py --help
