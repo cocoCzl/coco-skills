@@ -111,6 +111,38 @@ class LotterySkillTests(unittest.TestCase):
                     self.assertIn("front", stats)
                     self.assertIn("back", stats)
 
+    def test_dlt_hot_scores_are_smoothed_and_bounded(self) -> None:
+        draws = [
+            {"front": [1, 2, 3, 4, 5], "back": [1, 2]}
+            for _ in range(200)
+        ]
+        scores = lottery_skill.smoothed_hot_scores("dlt", draws, 200)
+        for zone in ("front", "back"):
+            self.assertTrue(all(0.70 <= score <= 1.40 for score in scores[zone].values()))
+        self.assertGreater(scores["front"][1], scores["front"][35])
+        self.assertGreater(scores["back"][1], scores["back"][12])
+
+    def test_dlt_hot_weights_remain_within_two_to_one_ratio(self) -> None:
+        draws = [
+            {"front": [1, 2, 3, 4, 5], "back": [1, 2]}
+            for _ in range(200)
+        ]
+        scores = lottery_skill.smoothed_hot_scores("dlt", draws, 200)
+        for zone in ("front", "back"):
+            weights = [max(0.75, min(1.50, 1.0 + 1.5 * (score - 1.0))) for score in scores[zone].values()]
+            self.assertLessEqual(max(weights) / min(weights), 2.0)
+
+    def test_ssq_hot_scores_are_smoothed_and_bounded(self) -> None:
+        draws = [
+            {"red": [1, 2, 3, 4, 5, 6], "blue": [7]},
+            {"red": [1, 8, 9, 10, 11, 12], "blue": [8]},
+        ]
+        scores = lottery_skill.zone_scores("ssq", draws, "hot", 2)
+        self.assertTrue(all(0.70 <= score <= 1.40 for score in scores["red"].values()))
+        self.assertTrue(all(0.70 <= score <= 1.40 for score in scores["blue"].values()))
+        self.assertGreater(scores["red"][1], scores["red"][33])
+        self.assertGreater(scores["blue"][7], scores["blue"][16])
+
     def test_daily_full_then_incremental_sync_and_version_snapshots(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp)
@@ -146,7 +178,7 @@ class LotterySkillTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             data_dir = Path(tmp)
             lottery_skill.sync_official_history(data_dir, "dlt", fetch=lambda *_: dlt_payload(), sleep=lambda _: None)
-            args = SimpleNamespace(data_dir=str(data_dir), game="dlt", window=1, seed=1, from_issue="07002", to_issue="07002")
+            args = SimpleNamespace(data_dir=str(data_dir), game="dlt", window=1, seed=1, from_issue="07002", to_issue="07002", trials=2, bootstrap_samples=10)
             original_sync = lottery_skill.sync_official_history
             lottery_skill.sync_official_history = lambda *_args, **_kwargs: lottery_skill.status_for_game(data_dir, "dlt")
             try:
@@ -155,7 +187,37 @@ class LotterySkillTests(unittest.TestCase):
                 lottery_skill.sync_official_history = original_sync
             self.assertEqual(result["periods"], 1)
             self.assertIn("prize_hits", result["results"][0])
+            self.assertEqual([item["mode"] for item in result["results"]], ["random", "hot_legacy", "hot", "cold"])
+            self.assertIn("relative_to_random", result["results"][2])
             self.assertTrue(result["data_version"])
+
+    def test_backtest_is_reproducible_with_multiple_trials(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            lottery_skill.sync_official_history(data_dir, "dlt", fetch=lambda *_: dlt_payload(), sleep=lambda _: None)
+            args = SimpleNamespace(data_dir=str(data_dir), game="dlt", window=1, seed=17, from_issue="07002", to_issue="07002", trials=3, bootstrap_samples=10)
+            original_sync = lottery_skill.sync_official_history
+            lottery_skill.sync_official_history = lambda *_args, **_kwargs: lottery_skill.status_for_game(data_dir, "dlt")
+            try:
+                first = lottery_skill.backtest(args)
+                second = lottery_skill.backtest(args)
+            finally:
+                lottery_skill.sync_official_history = original_sync
+            self.assertEqual(first, second)
+
+    def test_ssq_backtest_keeps_public_hot_interface_and_adds_legacy_control(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            data_dir = Path(tmp)
+            lottery_skill.sync_official_history(data_dir, "ssq", fetch=lambda *_: ssq_official_available_payload(), sleep=lambda _: None)
+            args = SimpleNamespace(data_dir=str(data_dir), game="ssq", window=1, seed=9, from_issue="2013002", to_issue="2013002", trials=2, bootstrap_samples=10)
+            original_sync = lottery_skill.sync_official_history
+            lottery_skill.sync_official_history = lambda *_args, **_kwargs: lottery_skill.status_for_game(data_dir, "ssq")
+            try:
+                result = lottery_skill.backtest(args)
+            finally:
+                lottery_skill.sync_official_history = original_sync
+            self.assertEqual([item["mode"] for item in result["results"]], ["random", "hot_legacy", "hot", "cold"])
+            self.assertIn("relative_to_random", result["results"][2])
 
     def test_recommendation_allows_partial_success_and_audits_version(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -25,7 +25,16 @@ GAMES = {
     "ssq": {"label": "双色球", "zones": (("red", 6, 1, 33), ("blue", 1, 1, 16))},
 }
 MODES = {"random", "hot", "cold"}
+# ``hot_legacy`` is deliberately not exposed by the recommendation CLI.  It
+# remains available to the backtest as a historical control for the previous
+# linear-frequency implementation.
+GENERATION_MODES = MODES | {"hot_legacy"}
 STRENGTHS = {"mild": 0.4, "medium": 1.0, "strong": 2.0}
+SMOOTHED_HOT_STRENGTHS = {"mild": 0.5, "medium": 1.0, "strong": 1.5}
+SMOOTHED_HOT_BLEND = ((0.25, 0.20), (1.0, 0.50), (2.5, 0.30))
+SMOOTHED_HOT_PRIOR_DRAWS = 100
+SMOOTHED_HOT_RATIO_RANGE = (0.70, 1.40)
+SMOOTHED_HOT_WEIGHT_RANGE = (0.75, 1.50)
 PAGE_SIZE = 100
 SYNC_DELAY_SECONDS = 0.2
 
@@ -573,12 +582,42 @@ def historical_keys(game: str, draws: list[dict[str, Any]]) -> set[tuple[int, ..
     return {canonical_key(game, draw) for draw in draws}
 
 
+def raw_hot_scores(game: str, draws: list[dict[str, Any]], window: int) -> dict[str, dict[int, float]]:
+    config = GAMES[game]
+    source = draws[-window:]
+    counts = {zone: Counter(number for draw in source for number in draw[zone]) for zone, *_ in config["zones"]}
+    return {zone: {number: float(counts[zone][number]) for number in range(lower, upper + 1)} for zone, _, lower, upper in config["zones"]}
+
+
+def smoothed_hot_scores(game: str, draws: list[dict[str, Any]], window: int) -> dict[str, dict[int, float]]:
+    """Return bounded relative-frequency scores for the upgraded hot mode."""
+    if not draws:
+        return {zone: {number: 1.0 for number in range(lower, upper + 1)} for zone, _, lower, upper in GAMES[game]["zones"]}
+    result: dict[str, dict[int, float]] = {}
+    for zone, picks_per_draw, lower, upper in GAMES[game]["zones"]:
+        population = upper - lower + 1
+        expected_per_draw = picks_per_draw / population
+        blended = {number: 0.0 for number in range(lower, upper + 1)}
+        for factor, blend_weight in SMOOTHED_HOT_BLEND:
+            size = max(1, min(len(draws), round(window * factor)))
+            counts = Counter(number for draw in draws[-size:] for number in draw[zone])
+            expected = size * expected_per_draw
+            prior = SMOOTHED_HOT_PRIOR_DRAWS * expected_per_draw
+            for number in blended:
+                blended[number] += blend_weight * ((counts[number] + prior) / (expected + prior))
+        result[zone] = {
+            number: max(SMOOTHED_HOT_RATIO_RANGE[0], min(SMOOTHED_HOT_RATIO_RANGE[1], score))
+            for number, score in blended.items()
+        }
+    return result
+
+
 def zone_scores(game: str, draws: list[dict[str, Any]], mode: str, window: int) -> dict[str, dict[int, float]]:
     config = GAMES[game]
     if mode == "hot":
-        source = draws[-window:]
-        counts = {zone: Counter(number for draw in source for number in draw[zone]) for zone, *_ in config["zones"]}
-        return {zone: {number: float(counts[zone][number]) for number in range(lower, upper + 1)} for zone, _, lower, upper in config["zones"]}
+        return smoothed_hot_scores(game, draws, window)
+    if mode == "hot_legacy":
+        return raw_hot_scores(game, draws, window)
     if mode == "cold":
         source = draws[-window:] if window else draws
         scores: dict[str, dict[int, float]] = {}
@@ -592,11 +631,11 @@ def zone_scores(game: str, draws: list[dict[str, Any]], mode: str, window: int) 
     return {}
 
 
-def weighted_sample_without_replacement(rng: random.Random, population: list[int], count: int, weights: dict[int, float], strength: float) -> list[int]:
+def weighted_sample_without_replacement(rng: random.Random, population: list[int], count: int, weights: dict[int, float], strength: float, *, absolute: bool = False) -> list[int]:
     available = list(population)
     picked: list[int] = []
     while len(picked) < count:
-        base = [1.0 + strength * weights[number] for number in available]
+        base = [weights[number] if absolute else 1.0 + strength * weights[number] for number in available]
         choice = rng.choices(available, weights=base, k=1)[0]
         picked.append(choice)
         available.remove(choice)
@@ -607,11 +646,16 @@ def candidate(game: str, rng: random.Random, mode: str, scores: dict[str, dict[i
     value: dict[str, list[int]] = {}
     for zone, count, lower, upper in GAMES[game]["zones"]:
         population = list(range(lower, upper + 1))
-        value[zone] = (
-            sorted(rng.sample(population, count))
-            if mode == "random"
-            else weighted_sample_without_replacement(rng, population, count, scores[zone], strength)
-        )
+        if mode == "random":
+            value[zone] = sorted(rng.sample(population, count))
+        elif mode == "hot":
+            weights = {
+                number: max(SMOOTHED_HOT_WEIGHT_RANGE[0], min(SMOOTHED_HOT_WEIGHT_RANGE[1], 1.0 + strength * (scores[zone][number] - 1.0)))
+                for number in population
+            }
+            value[zone] = weighted_sample_without_replacement(rng, population, count, weights, strength, absolute=True)
+        else:
+            value[zone] = weighted_sample_without_replacement(rng, population, count, scores[zone], strength)
     return value
 
 
@@ -625,27 +669,29 @@ def display_number(game: str, value: dict[str, list[int]]) -> str:
     return f"红球 {format_zone(value['red'])} ｜ 蓝球 {format_zone(value['blue'])}"
 
 
-def generate(game: str, archive: dict[str, Any], count: int, mode: str, window: int, strength_name: str, seed: int | None, exclude: set[tuple[int, ...]]) -> tuple[list[dict[str, list[int]]], int]:
+def generate(game: str, archive: dict[str, Any], count: int, mode: str, window: int, strength_name: str, seed: int | None, exclude: set[tuple[int, ...]], *, precomputed_scores: dict[str, dict[int, float]] | None = None, historical: set[tuple[int, ...]] | None = None) -> tuple[list[dict[str, list[int]]], int]:
     if count < 1 or count > 10:
         raise LotteryError("每种彩票单次注数必须在 1 到 10 之间")
-    if mode not in MODES:
+    if mode not in GENERATION_MODES:
         raise LotteryError("模式必须是 random、hot 或 cold")
     if strength_name not in STRENGTHS:
         raise LotteryError("强度必须是 mild、medium 或 strong")
     actual_seed = seed if seed is not None else random.SystemRandom().randrange(1, 2**63)
     rng = random.Random(actual_seed)
     draws = archive["draws"]
-    existing = historical_keys(game, draws) | exclude
-    scores = zone_scores(game, draws, mode, window)
+    existing = historical if historical is not None else historical_keys(game, draws)
+    excluded = set(exclude)
+    scores = precomputed_scores if precomputed_scores is not None else zone_scores(game, draws, mode, window)
+    strength = SMOOTHED_HOT_STRENGTHS[strength_name] if mode == "hot" else STRENGTHS[strength_name]
     picked: list[dict[str, list[int]]] = []
     attempts = 0
     while len(picked) < count and attempts < 200_000:
         attempts += 1
-        value = candidate(game, rng, mode, scores, STRENGTHS[strength_name])
+        value = candidate(game, rng, mode, scores, strength)
         key = canonical_key(game, value)
-        if key not in existing:
+        if key not in existing and key not in excluded:
             picked.append(value)
-            existing.add(key)
+            excluded.add(key)
     if len(picked) != count:
         raise LotteryError("在有效候选集中无法生成足够的不重复组合")
     return picked, actual_seed
@@ -654,7 +700,7 @@ def generate(game: str, archive: dict[str, Any], count: int, mode: str, window: 
 def stats_for_number(game: str, numbers: dict[str, list[int]], draws: list[dict[str, Any]], mode: str, window: int) -> dict[str, dict[str, int]]:
     if mode == "random":
         return {}
-    scores = zone_scores(game, draws, mode, window)
+    scores = raw_hot_scores(game, draws, window) if mode == "hot" else zone_scores(game, draws, mode, window)
     return {zone: {f"{number:02d}": int(scores[zone][number]) for number in numbers[zone]} for zone, *_ in GAMES[game]["zones"]}
 
 
@@ -720,6 +766,7 @@ def recommend(args: argparse.Namespace) -> dict[str, Any]:
             "mode": args.mode,
             "window": args.window if args.mode in {"hot", "cold"} else None,
             "strength": args.strength if args.mode in {"hot", "cold"} else None,
+            "hot_model": "多窗口平滑热度（0.25×/1×/2.5×窗口、有限偏向）" if args.mode == "hot" else None,
             "recommendations": results,
         })
     if audit_rows:
@@ -734,7 +781,7 @@ def recommend(args: argparse.Namespace) -> dict[str, Any]:
     return {"games": response_games, "unavailable_games": unavailable, "disclaimer": "仅供娱乐与参考，不保证中奖。"}
 
 
-MODE_LABELS = {"random": "随机未出现组合", "hot": "热号倾向", "cold": "冷号倾向"}
+MODE_LABELS = {"random": "随机未出现组合", "hot": "热号倾向", "hot_legacy": "旧线性热号（仅回测）", "cold": "冷号倾向"}
 STRENGTH_LABELS = {"mild": "轻度", "medium": "中等", "strong": "强"}
 
 
@@ -782,6 +829,8 @@ def render_recommendation(result: dict[str, Any]) -> str:
         if mode in {"hot", "cold"}:
             detail += f"（最近 {game['window']} 期，{STRENGTH_LABELS[game['strength']]}）"
         lines.append(f"模式：{detail}｜{scope_note}")
+        if game.get("hot_model"):
+            lines.append(f"热号模型：{game['hot_model']}")
         lines.extend(context_lines(status.get("public_context")))
         for recommendation in game["recommendations"]:
             lines.append(f"{recommendation['index']}. {recommendation['display']}")
@@ -817,7 +866,16 @@ def render_backtest(result: dict[str, Any]) -> str:
     for item in result["results"]:
         hits = "，".join(f"{zone_labels.get(zone, zone)} 平均命中 {value}" for zone, value in item["average_hits"].items())
         prizes = "，".join(f"{level} 等奖 {count} 次" for level, count in item["prize_hits"].items()) or "无奖级命中"
-        lines.append(f"{MODE_LABELS[item['mode']]}：{hits}；{prizes}")
+        comparison = item.get("relative_to_random")
+        interval = ""
+        if comparison:
+            interval = "；相对随机 " + "，".join(
+                f"{zone_labels.get(zone, zone)} {value['difference']:+.4f}（95% CI {value['ci95'][0]:+.4f} 至 {value['ci95'][1]:+.4f}）"
+                for zone, value in comparison.items()
+            )
+        lines.append(f"{MODE_LABELS[item['mode']]}：{hits}；{prizes}{interval}")
+    if result.get("trials_per_period"):
+        lines.append(f"每期每策略 {result['trials_per_period']} 次抽样；置信区间使用 {result['bootstrap_samples']} 次区块自助法。")
     lines.append(result["note"])
     return "\n".join(lines)
 
@@ -852,46 +910,91 @@ def issue_position(draws: list[dict[str, Any]], issue: str | None, default: int)
     raise LotteryError(f"历史中不存在第 {issue} 期")
 
 
+def bootstrap_ci(values: list[float], samples: int, seed: int) -> tuple[float, float]:
+    if not values:
+        return (0.0, 0.0)
+    rng = random.Random(seed)
+    means = []
+    length = len(values)
+    for _ in range(samples):
+        means.append(sum(values[rng.randrange(length)] for _ in range(length)) / length)
+    means.sort()
+    return (round(means[int((samples - 1) * 0.025)], 4), round(means[int((samples - 1) * 0.975)], 4))
+
+
 def backtest(args: argparse.Namespace) -> dict[str, Any]:
     data_dir = Path(args.data_dir)
     sync_official_history(data_dir, args.game)
     archive = load_ready_archive(data_dir, args.game)
     draws = archive["draws"]
+    # The longer DLT windows gracefully truncate to the available prior draws,
+    # so one centre-window of history is sufficient for an out-of-sample step.
     warmup = max(args.window, 1)
     if len(draws) <= warmup:
         raise LotteryError("历史期数不足以回测")
-    modes = ["random", "hot", "cold"]
+    modes = ["random", "hot_legacy", "hot", "cold"]
     start_index = max(warmup, issue_position(draws, getattr(args, "from_issue", None), warmup))
     end_index = issue_position(draws, getattr(args, "to_issue", None), len(draws) - 1)
     if start_index > end_index:
         raise LotteryError("回测起始期不得晚于结束期")
-    totals: dict[str, dict[str, int]] = {mode: {zone: 0 for zone, *_ in GAMES[args.game]["zones"]} for mode in modes}
+    total_hits: dict[str, dict[str, float]] = {mode: {zone: 0.0 for zone, *_ in GAMES[args.game]["zones"]} for mode in modes}
     prize_hits: dict[str, Counter[int]] = {mode: Counter() for mode in modes}
+    period_hits: dict[str, dict[str, list[float]]] = {mode: {zone: [] for zone, *_ in GAMES[args.game]["zones"]} for mode in modes}
+    trials_per_period = getattr(args, "trials", 200)
+    bootstrap_samples = getattr(args, "bootstrap_samples", 1000)
+    if trials_per_period < 1 or bootstrap_samples < 1:
+        raise LotteryError("回测 trials 和 bootstrap-samples 必须至少为 1")
+    historical = historical_keys(args.game, draws[:start_index])
     trials = 0
     for index in range(start_index, end_index + 1):
         prior = {"draws": draws[:index]}
         actual = draws[index]
         for offset, mode in enumerate(modes):
-            numbers, _ = generate(args.game, prior, 1, mode, args.window, "medium", args.seed + index * 10 + offset, set())
+            scores = zone_scores(args.game, prior["draws"], mode, args.window)
+            one_period = {zone: 0.0 for zone, *_ in GAMES[args.game]["zones"]}
+            for replicate in range(trials_per_period):
+                seed = args.seed + index * 1_000_000 + replicate * 10 + offset
+                numbers, _ = generate(args.game, prior, 1, mode, args.window, "medium", seed, set(), precomputed_scores=scores, historical=historical)
+                for zone, *_ in GAMES[args.game]["zones"]:
+                    one_period[zone] += len(set(numbers[0][zone]) & set(actual[zone]))
+                level = prize_level(args.game, numbers[0], actual)
+                if level is not None:
+                    prize_hits[mode][level] += 1
             for zone, *_ in GAMES[args.game]["zones"]:
-                totals[mode][zone] += len(set(numbers[0][zone]) & set(actual[zone]))
-            level = prize_level(args.game, numbers[0], actual)
-            if level is not None:
-                prize_hits[mode][level] += 1
+                average = one_period[zone] / trials_per_period
+                total_hits[mode][zone] += average
+                period_hits[mode][zone].append(average)
+        historical.add(canonical_key(args.game, actual))
         trials += 1
+    comparisons: dict[str, dict[str, dict[str, Any]]] = {}
+    for mode in modes:
+        if mode == "random":
+            continue
+        comparisons[mode] = {}
+        for zone, *_ in GAMES[args.game]["zones"]:
+            differences = [value - baseline for value, baseline in zip(period_hits[mode][zone], period_hits["random"][zone])]
+            mode_offset = {"hot_legacy": 11, "hot": 23, "cold": 37}[mode]
+            zone_offset = {name: position for position, (name, *_rest) in enumerate(GAMES[args.game]["zones"], start=1)}[zone]
+            comparisons[mode][zone] = {
+                "difference": round(sum(differences) / trials, 4),
+                "ci95": bootstrap_ci(differences, bootstrap_samples, args.seed + mode_offset * 100 + zone_offset),
+            }
     return {
         "game": args.game,
         "from_issue": draws[start_index]["issue"],
         "to_issue": draws[end_index]["issue"],
         "periods": trials,
         "seed": args.seed,
+        "trials_per_period": trials_per_period,
+        "bootstrap_samples": bootstrap_samples,
         "data_version": archive.get("data_version"),
         "results": [{
             "mode": mode,
-            "average_hits": {zone: round(value / trials, 4) for zone, value in totals[mode].items()},
-            "prize_hits": {str(level): prize_hits[mode][level] for level in sorted(prize_hits[mode])},
+            "average_hits": {zone: round(value / trials, 4) for zone, value in total_hits[mode].items()},
+            "prize_hits": {str(level): round(prize_hits[mode][level] / trials_per_period, 4) for level in sorted(prize_hits[mode])},
+            "relative_to_random": comparisons.get(mode),
         } for mode in modes],
-        "note": "回测仅描述历史表现，不保证未来表现。",
+        "note": "回测仅描述历史表现，不保证未来表现；只有相对随机的 95% 置信区间下界大于零，才可视为该历史划分下的改善。",
     }
 
 
@@ -926,6 +1029,8 @@ def parser() -> argparse.ArgumentParser:
     bt.add_argument("--seed", type=int, default=20260716)
     bt.add_argument("--from-issue")
     bt.add_argument("--to-issue")
+    bt.add_argument("--trials", type=int, default=200, help="每期每策略的可复现抽样次数")
+    bt.add_argument("--bootstrap-samples", type=int, default=1000, help="置信区间的区块自助法次数")
     bt.add_argument("--output", choices=("json", "text"), default="json")
     bt.set_defaults(handler=backtest)
     return root
