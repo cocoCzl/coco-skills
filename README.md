@@ -12,7 +12,27 @@
 
 ## 安装使用
 
-把需要的 skill 目录复制或链接到你的 agent skills 目录中。例如：
+如果已安装 Node.js，可使用 [`skills`](https://skills.sh/) CLI 安装指定 skill。日常使用推荐全局安装（`-g`）；将 `codex` 和 skill 名替换为你实际使用的 agent 与所需 skill。
+
+从 GitHub 安装：
+
+```bash
+npx skills add cocoCzl/coco-skills -g --agent codex --skill football-betting-assistant
+```
+
+克隆本仓库后，开发或调试时可直接从当前本地源码加载。在仓库根目录执行：
+
+```bash
+# 查看本地源码中可安装的 skill
+npx skills add . --list --full-depth
+
+# 从当前源码安装指定 skill
+npx skills add . -g --agent codex --skill football-betting-assistant
+```
+
+去掉 `-g` 即为项目级安装；它会创建 `.agents/`、`.codex/` 等本地运行态目录，不能提交到仓库。CLI 默认以链接方式安装，因此修改顶层源码目录后会立即生效；如需一份独立副本，请加 `--copy`。
+
+也可以不使用 CLI，直接把需要的 skill 目录复制或链接到你的 agent skills 目录中。例如：
 
 ```bash
 cp -R football-betting-assistant ~/.codex/skills/
