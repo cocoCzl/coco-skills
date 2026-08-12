@@ -1,0 +1,26 @@
+{
+  "skill_name": "lottery-number-recommendation",
+  "purpose": "Trigger precision for DLT/SSQ recommendation and adjacent lottery requests.",
+  "queries": [
+    {"id":"trigger-01","query":"给我大乐透两注历史没出现过的随机单式，先同步中国体彩网完整历史。","should_trigger":true,"reason":"大乐透官方历史校验和选号。"},
+    {"id":"trigger-02","query":"双色球最近 50 期强热号来 3 注，避开我之前生成过的完整组合。","should_trigger":true,"reason":"双色球热号和本地避重。"},
+    {"id":"trigger-03","query":"大乐透冷号遗漏怎么看？按当前连续遗漏给一注，只作娱乐。","should_trigger":true,"reason":"冷号/遗漏推荐。"},
+    {"id":"trigger-04","query":"回测大乐透 hot、cold 和 random 最近几年的平均命中及 95% 区间。","should_trigger":true,"reason":"彩票策略回测。"},
+    {"id":"trigger-05","query":"检查大乐透和双色球官方历史现在同步到哪一期，失败就别出号。","should_trigger":true,"reason":"数据状态与停止规则。"},
+    {"id":"trigger-06","query":"双色球和大乐透各三注近 100 期中等热号，共同参数都要生效。","should_trigger":true,"reason":"双彩参数继承。"},
+    {"id":"trigger-07","query":"哪个策略能保证中一等奖？如果不能，就给我可复现的历史对比。","should_trigger":true,"reason":"应拦截承诺并路由回测。"},
+    {"id":"trigger-08","query":"cwl 官网今天访问失败，告诉我本地双色球缓存是否仍满足最新完整门槛。","should_trigger":true,"reason":"官方源失败与缓存就绪检查。"},
+    {"id":"trigger-09","query":"从 2025001 到 2025150 回测双色球热号，不要偷看目标期之后开奖。","should_trigger":true,"reason":"指定范围的无前视回测。"},
+    {"id":"trigger-10","query":"随机一注双色球，但必须明确你检查的是官网 2013001 至今而非首期历史。","should_trigger":true,"reason":"双色球覆盖范围披露。"},
+    {"id":"no-trigger-01","query":"分析香港六合彩特码走势，给我三组生肖。","should_trigger":false,"reason":"不支持的其他彩票。"},
+    {"id":"no-trigger-02","query":"帮我代购今晚大乐透并自动支付 20 元。","should_trigger":false,"reason":"购买代办不支持。"},
+    {"id":"no-trigger-03","query":"解释大乐透一等奖奖金如何计税，引用现行法规。","should_trigger":false,"reason":"法律税务查询，不是选号或回测。"},
+    {"id":"no-trigger-04","query":"把这份双色球开奖 CSV 转成 Excel 并画红球频率图。","should_trigger":false,"reason":"用户只要求文件转换和制图。"},
+    {"id":"no-trigger-05","query":"用 Python 写一个从 1 到 35 抽 5 个数的函数和单元测试。","should_trigger":false,"reason":"普通编程任务。"},
+    {"id":"no-trigger-06","query":"中国体育彩票大乐透几点停止销售？只查官方规则。","should_trigger":false,"reason":"销售规则查询，无选号或统计。"},
+    {"id":"no-trigger-07","query":"分析 Powerball 历史号码并推荐一注。","should_trigger":false,"reason":"仅支持大乐透和双色球。"},
+    {"id":"no-trigger-08","query":"设计一张彩票站开业海报，要有双色球元素。","should_trigger":false,"reason":"视觉设计任务。"},
+    {"id":"no-trigger-09","query":"审查这个彩票爬虫有没有 SQL 注入和密钥泄漏。","should_trigger":false,"reason":"安全代码审查。"},
+    {"id":"no-trigger-10","query":"概括中国福利彩票的发展历史，写 1000 字科普。","should_trigger":false,"reason":"百科写作，不是推荐或回测。"}
+  ]
+}

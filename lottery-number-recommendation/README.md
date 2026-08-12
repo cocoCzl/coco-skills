@@ -34,6 +34,13 @@ cp -R lottery-number-recommendation ~/.codex/skills/
 
 ## 开发检查
 
+先用无联网诊断确认本地缓存状态；日常自然语言请求仍先走 `parse-request`：
+
+```bash
+python3 lottery-number-recommendation/scripts/lottery_skill.py doctor
+python3 lottery-number-recommendation/scripts/lottery_skill.py parse-request '双色球三注强热号'
+```
+
 ```bash
 python3 -m unittest discover -s tests -p 'test_*.py'
 python3 scripts/check_all_skills.py

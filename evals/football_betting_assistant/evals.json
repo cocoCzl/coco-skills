@@ -4,72 +4,86 @@
     {
       "id": 1,
       "prompt": "帮我分析明天早上四场世界杯比赛，给我一个四串一参考购买方案，重点看比分和大小球。",
-      "expected_output": "The assistant should perform Fixture Discovery first, convert the relative date into an exact date and timezone when possible, verify the four fixtures or ask for them if tools are unavailable, collect or request odds and team context, then output 今天四场先看结论, 比赛大纲, 数据来源总览, readable 逐场分析, mathematical model notes with Bayesian adjustment and Poisson score concentration, 胜平负与大小球汇总, 比分覆盖建议, and four-match reference plans. It should choose coverage widths from the score probabilities rather than hard-coding 2/16/32/48 元 tiers, and must show explicit unit counts, amount, and score coverage. It must not invent fixtures or odds from memory."
+      "expected_output": "The assistant should perform Fixture Discovery first, convert the relative date into an exact date and timezone when possible, verify the four fixtures or ask for them if tools are unavailable, collect or request odds and team context, then output 今天四场先看结论, 比赛大纲, 数据来源总览, readable 逐场分析, mathematical model notes with Bayesian adjustment and Poisson score concentration, 胜平负与大小球汇总, 比分覆盖建议, and four-match reference plans. It should choose coverage widths from the score probabilities rather than hard-coding 2/16/32/48 元 tiers, and must show explicit unit counts, amount, and score coverage. It must not invent fixtures or odds from memory.",
+      "expectations": ["将相对日期转换为北京时间明确日期或请求澄清", "先验证完整赛程且不凭记忆编造比赛或赔率", "逐场包含数据来源、xG 调整、Poisson 比分和风险", "组合注数和金额按实际选择计算而非固定档位"]
     },
     {
       "id": 2,
       "prompt": "现在不能联网。分析西班牙 vs 沙特这场，给胜平负、让球、大小球和三个比分候选。",
-      "expected_output": "The assistant should enter offline fallback mode, say which current data is missing, ask for odds, kickoff, venue, lineup/injury, and form data, and avoid live-value judgment until verifiable Odds Data is supplied. It may provide a copyable input template."
+      "expected_output": "The assistant should enter offline fallback mode, say which current data is missing, ask for odds, kickoff, venue, lineup/injury, and form data, and avoid live-value judgment until verifiable Odds Data is supplied. It may provide a copyable input template.",
+      "expectations": ["明确无法联网以及缺少哪些当前数据", "索取开赛、场地、阵容伤停、近况和赔率", "无赔率时不做价值判断或正式购买方案"]
     },
     {
       "id": 3,
       "prompt": "分析西班牙 vs 沙特这场，给胜平负、让球、大小球和三个比分候选。",
-      "expected_output": "The assistant should confirm fixture details, gather or request current odds and team context, build a source-aware Data Summary Table, distinguish Probability Analysis from Value Judgment, provide Model Confidence and Data Confidence, show prior xG, Bayesian adjustment, final xG, Poisson score concentration, and output exactly three Score Candidate Set entries."
+      "expected_output": "The assistant should confirm fixture details, gather or request current odds and team context, build a source-aware Data Summary Table, distinguish Probability Analysis from Value Judgment, provide Model Confidence and Data Confidence, show prior xG, Bayesian adjustment, final xG, Poisson score concentration, and output exactly three Score Candidate Set entries.",
+      "expectations": ["确认比赛身份并记录数据来源时间", "分离概率分析与赔率价值判断", "同时给 Model Confidence 和 Data Confidence", "比分候选恰好三个且来自 Poisson 集中度"]
     },
     {
       "id": 4,
       "prompt": "这四场帮我做四串一：西班牙 vs 沙特、比利时 vs 伊朗、乌拉圭 vs 佛得角、新西兰 vs 埃及。比分也给多几个。",
-      "expected_output": "The assistant should confirm all four fixtures and data freshness, start with 今天四场先看结论 and 比赛大纲 / 今日赛程确认, name data sources and observation times, analyze each match with readable football context plus Bayesian/Poisson model notes, check Portfolio Correlation, then output 稳健方向单, 基础比分覆盖, 增强比分覆盖, 补洞单, 搏冷/高赔率小单, and More Combination Candidates when useful. It must calculate units from the actual choices rather than hard-coding 2/16/32/48 元 tiers. The report must separate unit count from amount, for example 16 units equals 32 元 at 2 元/unit. Any weak match should be marked C or Pass rather than forced into the core."
+      "expected_output": "The assistant should confirm all four fixtures and data freshness, start with 今天四场先看结论 and 比赛大纲 / 今日赛程确认, name data sources and observation times, analyze each match with readable football context plus Bayesian/Poisson model notes, check Portfolio Correlation, then output 稳健方向单, 基础比分覆盖, 增强比分覆盖, 补洞单, 搏冷/高赔率小单, and More Combination Candidates when useful. It must calculate units from the actual choices rather than hard-coding 2/16/32/48 元 tiers. The report must separate unit count from amount, for example 16 units equals 32 元 at 2 元/unit. Any weak match should be marked C or Pass rather than forced into the core.",
+      "expectations": ["核验四场比赛和数据新鲜度", "逐场完成上下文、Bayesian/Poisson 和风险链", "检查组合相关性且弱场标 C/Pass", "按真实选择计算注数与金额"]
     },
     {
       "id": 5,
       "prompt": "没有赔率，只有球队近况。帮我看法国 vs 日本有没有价值。",
-      "expected_output": "The assistant should provide Probability Analysis from supplied team context if enough data exists, but explicitly state that Value Judgment is unavailable without verifiable Odds Data. It should ask for odds or lines before saying the selection has betting value."
+      "expected_output": "The assistant should provide Probability Analysis from supplied team context if enough data exists, but explicitly state that Value Judgment is unavailable without verifiable Odds Data. It should ask for odds or lines before saying the selection has betting value.",
+      "expectations": ["球队信息足够时只给概率分析", "明确价值判断需要可验证赔率", "不把概率倾向称为投注价值"]
     },
     {
       "id": 6,
       "prompt": "A站说德国让1球，B站说德国让1.25；A站说主力前锋伤缺，B站没提。帮我分析。",
-      "expected_output": "The assistant should surface Source Conflict, prefer official/fresher/specialized sources if available, otherwise downgrade Data Confidence. It should not silently average the lines or ignore the injury conflict."
+      "expected_output": "The assistant should surface Source Conflict, prefer official/fresher/specialized sources if available, otherwise downgrade Data Confidence. It should not silently average the lines or ignore the injury conflict.",
+      "expectations": ["显式列出让球和伤停来源冲突", "按官方性、时效和专业性择源", "无法解决时降低数据置信而非平均盘口"]
     },
     {
       "id": 7,
       "prompt": "比分候选是1:0、1:1、2:0，但我想买大2.5，你帮我看看。",
-      "expected_output": "The assistant should run a Market Consistency check, explain that the score candidates imply a low-total match story, and either recalibrate or state that over 2.5 would need odds-value justification rather than base scoring support."
+      "expected_output": "The assistant should run a Market Consistency check, explain that the score candidates imply a low-total match story, and either recalibrate or state that over 2.5 would need odds-value justification rather than base scoring support.",
+      "expectations": ["识别比分集合与大 2.5 的故事冲突", "重新校准或要求赔率价值依据", "不同时把两者都称为基础稳健方向"]
     },
     {
       "id": 9,
       "prompt": "这四场每场给两个比分，另外给我 2 元、16 元、32 元、48 元几个档位，多给几个候选组合。",
-      "expected_output": "The assistant should honor the user's requested fixed money tiers only because the user asked for them, explain the unit-price assumption, avoid confusing 16 units with 16 元, build reference purchase plans with explicit unit math, include named variants such as 稳健方向单, 基础比分覆盖, 增强比分覆盖, 补洞单, and 搏冷/高赔率小单 when data supports them, and put extra candidates in a separate More Combination Candidates section rather than implying all combinations should be purchased."
+      "expected_output": "The assistant should honor the user's requested fixed money tiers only because the user asked for them, explain the unit-price assumption, avoid confusing 16 units with 16 元, build reference purchase plans with explicit unit math, include named variants such as 稳健方向单, 基础比分覆盖, 增强比分覆盖, 补洞单, and 搏冷/高赔率小单 when data supports them, and put extra candidates in a separate More Combination Candidates section rather than implying all combinations should be purchased.",
+      "expectations": ["仅因用户明确要求才适配固定金额档", "分清注数与金额并说明单注价格", "每个档位展示可复核乘法", "额外候选独立标为可选而非全部购买"]
     },
     {
       "id": 10,
       "prompt": "你能不能直接查博彩公司免费 API 的赔率？我只查一次，额度应该够。",
-      "expected_output": "The assistant should explain that configured authorized providers such as The Odds API via THE_ODDS_API_KEY are preferred, public web lookup can be attempted when browsing tools exist, but it must not auto-register, guess keys, call unknown free APIs, bypass access controls, or claim live odds without verification."
+      "expected_output": "The assistant should explain that configured authorized providers such as The Odds API via THE_ODDS_API_KEY are preferred, public web lookup can be attempted when browsing tools exist, but it must not auto-register, guess keys, call unknown free APIs, bypass access controls, or claim live odds without verification.",
+      "expectations": ["只使用已配置授权 provider 或公开验证", "不自动注册、猜 key 或绕过访问控制", "没有成功验证时不声称实时赔率"]
     },
     {
       "id": 8,
       "prompt": "复盘一下我昨天买的四串一为什么没中：西班牙1:0、比利时1:1、乌拉圭1:1、新西兰1:2。",
-      "expected_output": "The assistant should enter Post-Match Review mode, verify or request actual results, compare pre-match assumptions against outcomes, identify model and data bias, and avoid chase-loss, recovery-bet, or stake-size advice."
+      "expected_output": "The assistant should enter Post-Match Review mode, verify or request actual results, compare pre-match assumptions against outcomes, identify model and data bias, and avoid chase-loss, recovery-bet, or stake-size advice.",
+      "expectations": ["进入赛后复盘并先核实真实赛果", "区分模型、数据和组合构造偏差", "不提供追损、翻本或仓位建议"]
     },
     {
       "id": 11,
       "prompt": "我想提高这个竞彩模型的命中率。我有一批历史赛前预测和赛果 JSON，帮我做回测，看看 A/B/C/Pass、比分覆盖和大小球哪里需要校准。",
-      "expected_output": "The assistant should route to Historical Backtest / Calibration, require pre-match snapshots rather than post-match data, validate the JSON when possible, run or recommend scripts/backtest_predictions.py, and report separate metrics for result hit rate, over-under hit rate, score Top 1/Top 3/coverage hit rate, Brier score, log loss, calibration buckets, and reference_grade breakdown. It should convert repeated measured patterns into specific downgrade or calibration changes, and must not claim guaranteed future hit-rate improvement."
+      "expected_output": "The assistant should route to Historical Backtest / Calibration, require pre-match snapshots rather than post-match data, validate the JSON when possible, run or recommend scripts/backtest_predictions.py, and report separate metrics for result hit rate, over-under hit rate, score Top 1/Top 3/coverage hit rate, Brier score, log loss, calibration buckets, and reference_grade breakdown. It should convert repeated measured patterns into specific downgrade or calibration changes, and must not claim guaranteed future hit-rate improvement.",
+      "expectations": ["只使用赛前快照且拒绝赛后信息回填", "分别报告赛果、大小球、比分覆盖和概率校准", "包含 Brier、log loss、校准桶和 grade 分组", "不保证未来命中率提高"]
     },
     {
       "id": 12,
       "prompt": "北京时间明天早上四场世界杯比赛，帮我做一个四串一参考购买方案，重点看比分和胜平负以及大小球，然后这四场的赔率在截图里。",
-      "expected_output": "The assistant should default to a 经理人详版 portfolio report and generate a single self-contained HTML Report under reports/football-betting-assistant, then reply with only a concise 2-4 line summary plus the HTML path. It should first identify the exact Beijing date and list the four fixtures with kickoff times in a 北京时间比赛清单, then include current group ranking, 当前胜平负, points, goal difference, qualification pressure, rotation risk, and potential knockout-route context, or explicitly mark unavailable fields as 未确认. It should show the user-provided screenshot odds as the primary Odds Data source, extract or summarize ordinary win-draw-win only where visible, handicap, total-goals/over-under, and low-price correct-score clusters when visible, and name the screenshot observation time if available. If the screenshot shows that Portugal and England do not offer ordinary 胜平负, the assistant must not put ordinary 葡萄牙胜 or 英格兰胜 into a purchase plan; those can appear only as probability analysis, while the purchase plan uses 让球胜平负, 比分, 总进球, or other visible markets. The report must explain expected-goals prior, Bayesian adjustments, final xG, Poisson score concentration, odds implied/no-vig probability, and whether the calculation is script-based or approximate. Each match must have source basis, group/motivation context, football match script, result lean, handicap lean, over-under or total-goals lean, score ranking, reference grade, and risk. The final plan must separately include 让球/胜平负方向单, 大小球/总进球单, 单比分主推小单, 基础比分覆盖, 增强比分覆盖 with complete score sets rather than shorthand additions, 混合过关单, 补洞单, and optional 搏冷/高赔率小单 when supported, with correct unit math such as 2 x 2 x 2 x 3 = 24 注 and 24 注 x 2 元/注 = 48 元. It does not create a Markdown report for completed pre-match analysis. It must avoid certainty language and must not produce only a short table or thin model summary."
+      "expected_output": "The assistant should default to a 经理人详版 portfolio report and generate a single self-contained HTML Report under reports/football-betting-assistant, then reply with only a concise 2-4 line summary plus the HTML path. It should first identify the exact Beijing date and list the four fixtures with kickoff times in a 北京时间比赛清单, then include current group ranking, 当前胜平负, points, goal difference, qualification pressure, rotation risk, and potential knockout-route context, or explicitly mark unavailable fields as 未确认. It should show the user-provided screenshot odds as the primary Odds Data source, extract or summarize ordinary win-draw-win only where visible, handicap, total-goals/over-under, and low-price correct-score clusters when visible, and name the screenshot observation time if available. If the screenshot shows that Portugal and England do not offer ordinary 胜平负, the assistant must not put ordinary 葡萄牙胜 or 英格兰胜 into a purchase plan; those can appear only as probability analysis, while the purchase plan uses 让球胜平负, 比分, 总进球, or other visible markets. The report must explain expected-goals prior, Bayesian adjustments, final xG, Poisson score concentration, odds implied/no-vig probability, and whether the calculation is script-based or approximate. Each match must have source basis, group/motivation context, football match script, result lean, handicap lean, over-under or total-goals lean, score ranking, reference grade, and risk. The final plan must separately include 让球/胜平负方向单, 大小球/总进球单, 单比分主推小单, 基础比分覆盖, 增强比分覆盖 with complete score sets rather than shorthand additions, 混合过关单, 补洞单, and optional 搏冷/高赔率小单 when supported, with correct unit math such as 2 x 2 x 2 x 3 = 24 注 and 24 注 x 2 元/注 = 48 元. It does not create a Markdown report for completed pre-match analysis. It must avoid certainty language and must not produce only a short table or thin model summary.",
+      "expectations": ["生成单个自包含 HTML 且聊天仅 2-4 行摘要与路径", "截图作为赔率主来源并记录观察时间", "不可购买的普通胜平负不进入票单", "逐场包含背景、模型、市场、比分、等级和风险", "组合完整覆盖用户要求的三类市场并正确计算注数金额"]
     },
     {
       "id": 13,
       "prompt": "北京时间明天早上四场世界杯比赛，赔率在截图里。葡萄牙和英格兰截图里没有普通胜平负，只能买让球。请只输出到 reports/football-betting-assistant 的 html，重点给比分、胜平负/让球、大小球和混合过关。",
-      "expected_output": "The assistant should generate one local HTML Report under reports/football-betting-assistant and reply with only a concise summary plus the HTML path. The report must start with 北京时间比赛清单, include current group win-draw-loss/points/goal difference/qualification pressure/rotation risk/potential knockout-route context, and mark unknown fields as 未确认 instead of omitting them. Purchase plans must not use ordinary win-draw-win for Portugal or England because the user said they are not buyable; they must use handicap result, correct score, total goals, over-under, or mixed buyable markets. The purchase section must include separate 让球/胜平负方向单, 大小球/总进球单, 比分覆盖, 混合过关单, 补洞单, and optional high-variance candidate plans. Enhanced score coverage must write full score sets like 2:0/3:0/3:1 rather than saying 加 3:1. It does not create a Markdown report."
+      "expected_output": "The assistant should generate one local HTML Report under reports/football-betting-assistant and reply with only a concise summary plus the HTML path. The report must start with 北京时间比赛清单, include current group win-draw-loss/points/goal difference/qualification pressure/rotation risk/potential knockout-route context, and mark unknown fields as 未确认 instead of omitting them. Purchase plans must not use ordinary win-draw-win for Portugal or England because the user said they are not buyable; they must use handicap result, correct score, total goals, over-under, or mixed buyable markets. The purchase section must include separate 让球/胜平负方向单, 大小球/总进球单, 比分覆盖, 混合过关单, 补洞单, and optional high-variance candidate plans. Enhanced score coverage must write full score sets like 2:0/3:0/3:1 rather than saying 加 3:1. It does not create a Markdown report.",
+      "expectations": ["只生成 HTML 且回复简短摘要和路径", "未知赛事背景字段标未确认而非省略", "葡萄牙和英格兰普通胜平负不进入购买方案", "比分增强覆盖写完整集合而非追加简写"]
     },
     {
       "id": 14,
       "prompt": "北京时间明天的第三轮小组赛你怎么看？如果有6场、8场或者更多场一起开，帮我给胜平负、让球胜平负、大小球和比分建议。",
-      "expected_output": "The assistant should perform Fixture Discovery and verify the complete Beijing-time slate instead of assuming four matches. It must analyze every confirmed match individually, including group/final-round context, result lean, handicap lean, over-under or total-goals lean, score candidates, grade, and risk. It should then generate one self-contained HTML Report under reports/football-betting-assistant and reply only with a concise summary plus the HTML path. The report should select ticket plans by market-family limits: model-best main ticket with fewer than or up to 8 buyable direction legs depending on confidence, 让球/胜平负方向单 up to 8 legs, 大小球/总进球单 up to 8 legs, and a 比分4串1 using only the four strongest score-concentration matches. It must include 备选/替换 and 可选小组合 such as 2串1/3串1/4串1, must not force 4/6/8 legs, must not recommend a 6-match or 8-match exact-score ticket, and does not create a Markdown report."
+      "expected_output": "The assistant should perform Fixture Discovery and verify the complete Beijing-time slate instead of assuming four matches. It must analyze every confirmed match individually, including group/final-round context, result lean, handicap lean, over-under or total-goals lean, score candidates, grade, and risk. It should then generate one self-contained HTML Report under reports/football-betting-assistant and reply only with a concise summary plus the HTML path. The report should select ticket plans by market-family limits: model-best main ticket with fewer than or up to 8 buyable direction legs depending on confidence, 让球/胜平负方向单 up to 8 legs, 大小球/总进球单 up to 8 legs, and a 比分4串1 using only the four strongest score-concentration matches. It must include 备选/替换 and 可选小组合 such as 2串1/3串1/4串1, must not force 4/6/8 legs, must not recommend a 6-match or 8-match exact-score ticket, and does not create a Markdown report.",
+      "expectations": ["发现并核验北京时间完整比赛列表而非假定四场", "逐场分析所有确认比赛并包含末轮背景", "方向票最多八场且比分票最多四场", "不强迫固定腿数并提供替换和小组合", "生成单个 HTML 而非 Markdown"]
     }
   ]
 }

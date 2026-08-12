@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://coco-skills.local/lottery-number-recommendation/agent-result.schema.json",
+  "title": "Lottery Number Recommendation agent result",
+  "type": "object",
+  "required": ["schema_version", "skill", "command", "status", "data_status", "next_action", "artifacts", "warnings", "error_code", "metrics"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "skill": {"const": "lottery-number-recommendation"},
+    "command": {"type": "string", "minLength": 1},
+    "status": {"enum": ["ready", "completed", "blocked", "degraded", "error"]},
+    "data_status": {"type": "string", "minLength": 1},
+    "next_action": {"type": ["string", "null"]},
+    "artifacts": {"type": "array", "items": {"type": "string"}},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "error_code": {"type": ["string", "null"]},
+    "metrics": {"type": "object", "required": ["elapsed_ms"], "properties": {"elapsed_ms": {"type": "number", "minimum": 0}}},
+    "data": {}
+  },
+  "additionalProperties": true
+}

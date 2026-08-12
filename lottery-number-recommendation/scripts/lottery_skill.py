@@ -7,17 +7,30 @@ import argparse
 import datetime as dt
 import hashlib
 import json
+import os
 import random
 import re
 import sys
 import time
 import uuid
+import platform
+import importlib.util
 from collections import Counter
 from math import ceil
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+
+try:
+    from request_parser import parse_request_text as _parse_request_text
+except ImportError:  # imported directly by repository tests
+    _parser_spec = importlib.util.spec_from_file_location("lottery_request_parser", Path(__file__).with_name("request_parser.py"))
+    if _parser_spec is None or _parser_spec.loader is None:  # pragma: no cover - corrupt package
+        raise
+    _parser_module = importlib.util.module_from_spec(_parser_spec)
+    _parser_spec.loader.exec_module(_parser_module)
+    _parse_request_text = _parser_module.parse_request_text
 
 
 GAMES = {
@@ -63,6 +76,23 @@ class LotteryError(ValueError):
     """A user-actionable validation or readiness error."""
 
 
+ERROR_CODE_RULES = (
+    ("访问限制", "SOURCE_ACCESS_BLOCKED"),
+    ("HTTP", "SOURCE_HTTP_ERROR"),
+    ("无法连接", "SOURCE_UNAVAILABLE"),
+    ("完整", "DATA_INCOMPLETE"),
+    ("未准备", "DATA_NOT_READY"),
+    ("参数", "INVALID_ARGUMENTS"),
+)
+
+
+def stable_error_code(message: str) -> str:
+    for marker, code in ERROR_CODE_RULES:
+        if marker in message:
+            return code
+    return "LOTTERY_OPERATION_FAILED"
+
+
 def utc_now() -> str:
     return dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
 
@@ -79,7 +109,20 @@ def read_json(path: Path) -> dict[str, Any]:
 
 def write_json(path: Path, value: Any) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    try:
+        with temporary.open("x", encoding="utf-8", newline="\n") as handle:
+            json.dump(value, handle, ensure_ascii=False, indent=2)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+    except OSError as exc:
+        try:
+            temporary.unlink()
+        except OSError:
+            pass
+        raise LotteryError(f"无法原子写入 JSON 文件：{exc}") from exc
 
 
 def request_json(url: str, headers: dict[str, str]) -> dict[str, Any]:
@@ -434,111 +477,11 @@ def status(args: argparse.Namespace) -> dict[str, Any]:
     return {"data_dir": str(Path(args.data_dir)), "games": [status_for_game(Path(args.data_dir), game) for game in games]}
 
 
-GAME_TERMS = {"dlt": ("大乐透",), "ssq": ("双色球",)}
-MODE_TERMS = {
-    "random": ("随机", "未出现组合", "随便来"),
-    "hot": ("热号", "高频号", "常出号码", "偏热", "强热"),
-    "cold": ("冷号", "遗漏久", "很久没开", "偏冷", "强冷"),
-}
-
-
-def matched_games(text: str) -> list[str]:
-    return [game for game, terms in GAME_TERMS.items() if any(term in text for term in terms)]
-
-
-def game_positions(text: str, games: list[str]) -> list[int]:
-    return sorted(text.find(term) for game in games for term in GAME_TERMS[game] if text.find(term) >= 0)
-
-
-def request_segment(text: str, game: str, games: list[str]) -> str:
-    positions = [text.find(term) for term in GAME_TERMS[game] if text.find(term) >= 0]
-    if not positions:
-        return text
-    start = min(positions)
-    later = [text.find(term, start + 1) for other in games if other != game for term in GAME_TERMS[other] if text.find(term, start + 1) >= 0]
-    return text[start:min(later) if later else len(text)]
-
-
-def is_common_match(match: re.Match[str], text: str, games: list[str]) -> bool:
-    """A parameter outside named-game segments applies to both named games."""
-    positions = game_positions(text, games)
-    return bool(positions) and (match.start() < positions[0] or match.start() >= positions[-1])
-
-
-def common_match(pattern: str, text: str, games: list[str]) -> re.Match[str] | None:
-    matches = list(re.finditer(pattern, text))
-    if len(matches) == 1 and is_common_match(matches[0], text, games):
-        return matches[0]
-    return None
-
-
-def mode_matches(text: str) -> list[tuple[str, int]]:
-    matches = []
-    for mode, terms in MODE_TERMS.items():
-        for term in terms:
-            start = text.find(term)
-            if start >= 0:
-                matches.append((mode, start))
-                break
-    return matches
-
-
-def parse_mode(text: str) -> str | None:
-    modes = [mode for mode, terms in MODE_TERMS.items() if any(term in text for term in terms)]
-    if len(modes) > 1:
-        raise LotteryError("随机、热号和冷号不能同时使用；请只选择一种模式")
-    return modes[0] if modes else None
-
-
 def parse_request_text(text: str) -> dict[str, Any]:
-    """Convert common Chinese requests into explicit, testable command parameters."""
-    if not text or not text.strip():
-        raise LotteryError("请说明要查询的数据状态、回测，或大乐透/双色球选号请求")
-    normalized = text.strip()
-    if any(term in normalized for term in ("必中", "保证中奖", "保证盈利", "最大概率发财")):
-        return {"action": "refuse", "reason": "不承诺中奖、盈利或最大概率；仅可提供娱乐性号码推荐"}
-    games = matched_games(normalized)
-    if any(term in normalized for term in ("数据状态", "检查数据", "同步历史数据")):
-        return {"action": "status", "games": games or list(GAMES)}
-    if any(term in normalized for term in ("回测", "效果", "统计")):
-        if len(games) != 1:
-            return {"action": "clarify", "reason": "回测请明确指定大乐透或双色球"}
-        window_match = re.search(r"(?:最近)?\s*(\d+)\s*期", normalized)
-        return {"action": "backtest", "game": games[0], "window": int(window_match.group(1)) if window_match else 100}
-    if not games:
-        return {"action": "clarify", "reason": "请明确指定大乐透、双色球，或同时说明两者"}
-    common_mode = None
-    all_mode_matches = mode_matches(normalized)
-    if len(all_mode_matches) == 1:
-        mode, start = all_mode_matches[0]
-        pseudo_match = re.search(re.escape(next(term for term in MODE_TERMS[mode] if term in normalized)), normalized)
-        if pseudo_match and is_common_match(pseudo_match, normalized, games):
-            common_mode = mode
-    common_count_match = common_match(r"(\d+)\s*(?:注|组|串)", normalized, games)
-    common_window_match = common_match(r"(?:最近)?\s*(\d+)\s*期", normalized, games)
-    strength_pattern = r"强热|强冷|强烈|稍微|轻微"
-    common_strength_match = common_match(strength_pattern, normalized, games)
-    common_avoid_match = common_match(r"避开(?:以前|历史推荐|之前)", normalized, games)
-    requests = []
-    for game in games:
-        segment = request_segment(normalized, game, games)
-        mode = parse_mode(segment) or common_mode or "random"
-        count_match = re.search(r"(\d+)\s*(?:注|组|串)", segment)
-        count = int((count_match or common_count_match).group(1)) if count_match or common_count_match else 1
-        if not 1 <= count <= 10:
-            raise LotteryError("每种彩票单次注数必须在 1 到 10 之间")
-        window_match = re.search(r"(?:最近)?\s*(\d+)\s*期", segment)
-        window = int((window_match or common_window_match).group(1)) if window_match or common_window_match else 100
-        strength_text = segment if re.search(strength_pattern, segment) else (common_strength_match.group(0) if common_strength_match else "")
-        strength = "strong" if any(term in strength_text for term in ("强热", "强冷", "强烈")) else "mild" if any(term in strength_text for term in ("稍微", "轻微")) else "medium"
-        avoid_history = bool(re.search(r"避开" + r".*(?:以前|历史推荐|之前)", segment) or common_avoid_match)
-        requests.append({
-            "game": game, "count": count, "mode": mode,
-            "window": window,
-            "strength": strength,
-            "avoid_history": avoid_history,
-        })
-    return {"action": "recommend", "requests": requests}
+    try:
+        return _parse_request_text(text, list(GAMES))
+    except ValueError as exc:
+        raise LotteryError(str(exc)) from exc
 
 
 def parse_request(args: argparse.Namespace) -> dict[str, Any]:
@@ -998,10 +941,58 @@ def backtest(args: argparse.Namespace) -> dict[str, Any]:
     }
 
 
+def doctor(args: argparse.Namespace) -> dict[str, Any]:
+    """Inspect local capability and cached-history readiness without networking."""
+
+    data_dir = Path(args.data_dir)
+    games = {game: status_for_game(data_dir, game) for game in GAMES}
+    ready_games = [game for game, item in games.items() if item.get("ready") is True]
+    return {
+        "schema_version": "1.0",
+        "skill": "lottery-number-recommendation",
+        "python": platform.python_version(),
+        "standard_library_only": True,
+        "network_tested": False,
+        "data_dir": str(data_dir),
+        "games": games,
+        "ready_games": ready_games,
+        "next_action": None if len(ready_games) == len(GAMES) else "运行 sync；若官方源失败，不生成号码。",
+    }
+
+
+def result_state(command: str, result: Any) -> tuple[str, str, str | None, str | None]:
+    """Describe successful handler output without hiding partial failures."""
+
+    if not isinstance(result, dict):
+        return "completed", "validated_output", None, None
+    if command == "doctor":
+        ready = result.get("ready_games", [])
+        if len(ready) < len(GAMES):
+            return "degraded", "cache_not_ready", result.get("next_action"), "DATA_NOT_READY"
+    if command == "status":
+        games = result.get("games", [])
+        if games and not all(item.get("ready") for item in games if isinstance(item, dict)):
+            return "degraded", "data_not_ready", "运行 sync；失败的彩票不要生成号码。", "DATA_NOT_READY"
+    if command == "sync":
+        games = result.get("games", [])
+        failures = [item for item in games if isinstance(item, dict) and item.get("error")]
+        if failures:
+            status = "blocked" if len(failures) == len(games) else "degraded"
+            message = str(failures[0].get("error") or "")
+            return status, "sync_failed" if status == "blocked" else "partial_sync", "检查官方源后重试；失败的彩票不要生成号码。", stable_error_code(message)
+    if command == "recommend" and result.get("unavailable_games"):
+        return "degraded", "partial_recommendation", "检查未就绪彩票的官方同步状态。", "PARTIAL_DATA_UNAVAILABLE"
+    if command == "parse-request" and result.get("action") in {"clarify", "refuse"}:
+        return "blocked", "request_needs_user_action", result.get("reason"), "REQUEST_CLARIFICATION_REQUIRED" if result.get("action") == "clarify" else "UNSAFE_PROMISE_REFUSED"
+    return "completed", "validated_output", result.get("next_action"), None
+
+
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(description=__doc__)
     root.add_argument("--data-dir", default="data/lottery-number-recommendation", help="本地数据目录")
     commands = root.add_subparsers(dest="command", required=True)
+    health = commands.add_parser("doctor", help="检查本地能力和缓存状态（不联网）")
+    health.set_defaults(handler=doctor)
     current_status = commands.add_parser("status", help="检查本地数据状态")
     current_status.add_argument("--game", choices=GAMES)
     current_status.add_argument("--output", choices=("json", "text"), default="json")
@@ -1038,16 +1029,57 @@ def parser() -> argparse.ArgumentParser:
 
 def main() -> int:
     args = parser().parse_args()
+    started = time.perf_counter()
     try:
         result = args.handler(args)
     except LotteryError as exc:
-        print(json.dumps({"ok": False, "error": str(exc)}, ensure_ascii=False), file=sys.stderr)
+        message = str(exc)
+        print(
+            json.dumps(
+                {
+                    "ok": False,
+                    "schema_version": "1.0",
+                    "skill": "lottery-number-recommendation",
+                    "command": args.command,
+                    "status": "blocked",
+                    "data_status": "operation_failed",
+                    "next_action": "检查官方源、缓存完整性或请求参数后重试；不要生成兜底号码。",
+                    "artifacts": [],
+                    "warnings": [],
+                    "error_code": stable_error_code(message),
+                    "error": message,
+                    "metrics": {"elapsed_ms": round((time.perf_counter() - started) * 1000, 3)},
+                },
+                ensure_ascii=False,
+            ),
+            file=sys.stderr,
+        )
         return 2
     if getattr(args, "output", "json") == "text":
         renderer = {"recommend": render_recommendation, "status": render_status, "sync": render_status, "backtest": render_backtest}
         print(renderer[args.command](result))
     else:
-        print(json.dumps({"ok": True, "data": result}, ensure_ascii=False, indent=2))
+        status, data_status, next_action, error_code = result_state(args.command, result)
+        print(
+            json.dumps(
+                {
+                    "ok": True,
+                    "schema_version": "1.0",
+                    "skill": "lottery-number-recommendation",
+                    "command": args.command,
+                    "status": status,
+                    "data_status": data_status,
+                    "next_action": next_action,
+                    "artifacts": [],
+                    "warnings": [],
+                    "error_code": error_code,
+                    "metrics": {"elapsed_ms": round((time.perf_counter() - started) * 1000, 3)},
+                    "data": result,
+                },
+                ensure_ascii=False,
+                indent=2,
+            )
+        )
     return 0
 
 

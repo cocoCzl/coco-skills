@@ -249,6 +249,15 @@ python3 ai-resume-expert/scripts/render_resume.py final-resume.md
 
 ## 确定性工具
 
+Agent 日常调用优先使用统一入口，它会返回稳定状态、下一步、产物路径和错误码：
+
+```bash
+python3 ai-resume-expert/scripts/resume_skill.py doctor
+python3 ai-resume-expert/scripts/resume_skill.py route '帮我优化 Java 后端简历'
+```
+
+底层工具继续向后兼容，适合调试或高级工作流。
+
 随 Skill 提供的 Python 工具只负责安全扫描、提取、结构校验、持久化和渲染；它们不会取代大模型的职业判断。核心工具只依赖 Python 标准库和明确探测到的本地命令；可选 WeasyPrint PDF 路径使用 `requirements-pdf.txt`。
 
 在构造工具输入前先阅读 [`schemas/README.md`](schemas/README.md)。它提供证据记录、追踪表、Markdown/PDF 门槛包和职业证据库的最小有效 JSON；不要自行猜测字段，也不要把扫描得到的项目事实直接改成个人贡献。

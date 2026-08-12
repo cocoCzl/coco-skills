@@ -1,0 +1,26 @@
+{
+  "skill_name": "football-betting-assistant",
+  "purpose": "Trigger precision for betting intents and nearby non-betting football requests.",
+  "queries": [
+    {"id":"trigger-01","query":"北京时间明天竞彩有四场，我把让球胜平负赔率截图发你，帮我做稳健三串一和比分补洞。","should_trigger":true,"reason":"明确竞彩组合、赔率和比分决策。"},
+    {"id":"trigger-02","query":"西班牙 vs 日本这场盘口从半一升一球，有没有赔率价值？","should_trigger":true,"reason":"盘口与价值判断。"},
+    {"id":"trigger-03","query":"没有赔率，先按双方近十场数据估胜平负、大小球和三个比分。","should_trigger":true,"reason":"无赔率的概率分析仍属于赛前投注辅助。"},
+    {"id":"trigger-04","query":"我昨天四串一错了两场，结合保存的 prediction snapshot 复盘模型和组合构造。","should_trigger":true,"reason":"结构化赛后复盘。"},
+    {"id":"trigger-05","query":"这里有 300 场赛前概率和赛果 JSON，回测 Brier、log loss、比分 Top3 和 A/B/C 分级。","should_trigger":true,"reason":"投注模型回测校准。"},
+    {"id":"trigger-06","query":"世界杯小组末轮八场同时开，核实出线形势后给让球和总进球方向。","should_trigger":true,"reason":"赛事背景驱动的多场竞彩分析。"},
+    {"id":"trigger-07","query":"葡萄牙截图里没有普通胜平负，只能让球，帮我排除不可买玩法再组票。","should_trigger":true,"reason":"可购买市场约束。"},
+    {"id":"trigger-08","query":"比分候选 1:0/1:1/2:0，但我考虑大 2.5，检查结论是不是矛盾。","should_trigger":true,"reason":"市场一致性检查。"},
+    {"id":"trigger-09","query":"用 The Odds API 的已配置 key 拉英超赔率并做赛前报告，不要登录博彩公司。","should_trigger":true,"reason":"授权赔率源与赛前报告。"},
+    {"id":"trigger-10","query":"这六场不要硬凑六串一，按数据质量筛 Pass，再给 2 串 1 和 3 串 1 备选。","should_trigger":true,"reason":"组合筛选和风险分级。"},
+    {"id":"no-trigger-01","query":"解释瓜迪奥拉 3-2-4-1 控球体系里边后卫内收的战术作用。","should_trigger":false,"reason":"纯战术讨论，无投注决策。"},
+    {"id":"no-trigger-02","query":"查询昨晚曼城比赛最终比分和进球者，给我新闻来源。","should_trigger":false,"reason":"单纯赛果和资讯查询。"},
+    {"id":"no-trigger-03","query":"帮我设计一个足球训练计划，重点提升 10 岁孩子的传接球。","should_trigger":false,"reason":"青训训练计划。"},
+    {"id":"no-trigger-04","query":"用 React 做一个世界杯积分榜网页，数据先写死。","should_trigger":false,"reason":"前端开发任务。"},
+    {"id":"no-trigger-05","query":"统计这个 CSV 里各球队进球均值并画柱状图，不需要预测或投注建议。","should_trigger":false,"reason":"普通数据分析。"},
+    {"id":"no-trigger-06","query":"写一篇欧冠决赛赛后评论，语气像体育专栏。","should_trigger":false,"reason":"体育写作而非投注复盘。"},
+    {"id":"no-trigger-07","query":"Football Manager 里这套阵容该用什么职责和训练强度？","should_trigger":false,"reason":"足球游戏策略。"},
+    {"id":"no-trigger-08","query":"我想做一个 Poisson 分布教学示例，用足球进球演示公式。","should_trigger":false,"reason":"数学教学，不要求投注结论。"},
+    {"id":"no-trigger-09","query":"审查这个赔率采集 Python 项目的重试和异常处理代码。","should_trigger":false,"reason":"代码审查，不执行足球投注工作流。"},
+    {"id":"no-trigger-10","query":"把这份球队名单翻译成中文并统一人名格式。","should_trigger":false,"reason":"翻译与格式整理。"}
+  ]
+}

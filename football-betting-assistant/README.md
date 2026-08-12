@@ -207,6 +207,15 @@ export FOOTBALL_DATA_API_KEY="your_football_data_key"
 
 ## 🛠️ 开发者常用命令
 
+Agent 日常调用优先使用统一入口，避免手工选择和拼接多个脚本：
+
+```bash
+python3 football-betting-assistant/scripts/football_skill.py doctor
+python3 football-betting-assistant/scripts/football_skill.py route '明天竞彩四串一'
+```
+
+旧脚本保持向后兼容，并作为统一入口的确定性底层能力。
+
 普通用户不需要运行这些命令。它们用于开发、调试、离线复现和测试。
 
 ### 📥 数据采集和快照检查

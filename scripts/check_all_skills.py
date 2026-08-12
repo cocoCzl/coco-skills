@@ -208,6 +208,29 @@ def main() -> int:
                 else:
                     print("Frontmatter description present.")
 
+        interface_schema = skill / "schemas" / "agent-result.schema.json"
+        if not interface_schema.is_file():
+            failed = True
+            print("Missing schemas/agent-result.schema.json.")
+        else:
+            try:
+                import json
+
+                contract = json.loads(interface_schema.read_text(encoding="utf-8"))
+            except (OSError, ValueError) as exc:
+                failed = True
+                print("Invalid agent result schema: {0}".format(exc))
+            else:
+                required_result_fields = {
+                    "schema_version", "skill", "command", "status", "data_status",
+                    "next_action", "artifacts", "warnings", "error_code", "metrics",
+                }
+                if not required_result_fields.issubset(set(contract.get("required", []))):
+                    failed = True
+                    print("Agent result schema is missing required envelope fields.")
+                else:
+                    print("Agent result schema present.")
+
         if not readme_registers_skill(root_readme, skill):
             failed = True
             print("Root README.md does not register this skill.")
