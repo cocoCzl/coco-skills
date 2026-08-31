@@ -1,0 +1,4 @@
+<mapper namespace="audit.AuditMapper">
+  <sql id="cols">a.id,a.user_id</sql>
+  <select id="findDynamic">SELECT <include refid="cols"/> FROM audit_event a <if test="joinUser">LEFT JOIN app_user u ON a.user_id=u.id</if></select>
+</mapper>

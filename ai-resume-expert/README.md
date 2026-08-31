@@ -180,6 +180,18 @@ macOS 通常自带可用于中文排版的系统字体；在其他系统或精�
 export PATH="/Applications/LibreOffice.app/Contents/MacOS:$PATH"
 ```
 
+### macOS Codex 沙箱说明
+
+LibreOffice 的 `--version` 可以在 Codex 沙箱中正常返回，但真实转换仍会初始化一部分 macOS 应用环境，并可能以 `Abort trap: 6` / 退出码 `134` 崩溃。这不表示 LibreOffice 安装损坏。先在普通终端或经用户批准的沙箱外命令中验证真实转换，不要盲目重装。
+
+通过 Codex 生成简历 PDF 时，应让整个统一入口在沙箱外运行：
+
+```bash
+python3 <skill-dir>/scripts/resume_skill.py render confirmed-resume.md --confirmed --package resume-package.json
+```
+
+应只批准上述脚本的 `render` 子命令。不要关闭整个 Codex 沙箱，也不要只批准内部的 `soffice` 子进程。若用户不批准沙箱外执行，保持既有安全降级：只交付确认后的 Markdown 和可打印 HTML，不把 PDF 标为可交付。
+
 ### Ubuntu 24.04 安装示例
 
 Ubuntu 上可用 WeasyPrint 作为首选的可重复路径；以下示例安装 Poppler、中文字体与 WeasyPrint 所需的本地排版库。只有需要 PDF 时才执行：

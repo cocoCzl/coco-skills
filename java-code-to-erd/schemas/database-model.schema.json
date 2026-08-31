@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://coco-skills.local/java-code-to-erd/database-model.schema.json",
+  "title": "Java code-derived database model",
+  "type": "object",
+  "required": ["schemaVersion", "analysisStatus", "scope", "applications", "profiles", "dataSources", "dialects", "technologies", "coverage", "databaseObjects", "codeObjects", "objectMappings", "operations", "relationships", "evidence", "conflicts", "candidates", "unresolved"],
+  "properties": {
+    "schemaVersion": {"const": "1.0"},
+    "analysisStatus": {"enum": ["COMPLETE", "PARTIAL", "FAILED"]},
+    "scope": {"type": "object"},
+    "applications": {"type": "array", "items": {"type": "object", "required": ["id", "name"]}},
+    "profiles": {"type": "array", "items": {"type": "string"}},
+    "dataSources": {"type": "array", "items": {"type": "object", "required": ["id"]}},
+    "dialects": {"type": "array", "items": {"type": "string"}},
+    "technologies": {"type": "array", "items": {"type": "string"}},
+    "ruleReferences": {"type": "array", "items": {"type": "string"}},
+    "environmentDiagnostics": {"type": "array", "items": {"type": "object", "required": ["kind", "message"], "properties": {"kind": {"const": "JDK_SOURCE_VERIFICATION"}, "message": {"type": "string"}}, "additionalProperties": false}},
+    "visualStatus": {"enum": ["SOURCE_ONLY", "RENDERER_AVAILABLE_NOT_VERIFIED", "VERIFIED"]},
+    "coverage": {"type": "object", "required": ["discovered", "analyzed", "skipped", "unresolved"]},
+    "databaseObjects": {"type": "array", "items": {"$ref": "#/$defs/databaseObject"}},
+    "codeObjects": {"type": "array", "items": {"type": "object", "required": ["id", "qualifiedName", "role", "evidenceIds"]}},
+    "objectMappings": {"type": "array", "items": {"type": "object", "required": ["codeObjectId", "databaseObjectIds", "role", "evidenceIds"]}},
+    "operations": {"type": "array", "items": {"type": "object", "required": ["id", "kind", "databaseObjectId", "evidenceIds"]}},
+    "relationships": {"type": "array", "items": {"$ref": "#/$defs/relationship"}},
+    "evidence": {"type": "array", "items": {"$ref": "#/$defs/evidence"}},
+    "conflicts": {"type": "array", "items": {"type": "object", "required": ["id", "kind", "message", "evidenceIds"]}},
+    "candidates": {"type": "array", "items": {"$ref": "#/$defs/relationship"}},
+    "unresolved": {"type": "array", "items": {"type": "object", "required": ["id", "kind", "message", "evidenceIds"]}}
+  },
+  "$defs": {
+    "evidence": {
+      "type": "object",
+      "required": ["id", "file", "startLine", "endLine", "sourceType"],
+      "properties": {"id": {"type": "string"}, "file": {"type": "string"}, "startLine": {"type": "integer", "minimum": 1}, "endLine": {"type": "integer", "minimum": 1}, "sourceType": {"type": "string"}},
+      "additionalProperties": false
+    },
+    "column": {
+      "type": "object",
+      "required": ["id", "name", "javaType", "databaseType", "primaryKey", "unique", "nullable", "evidenceIds"],
+      "properties": {"id": {"type": "string"}, "name": {"type": "string"}, "javaName": {"type": ["string", "null"]}, "javaType": {"type": ["string", "null"]}, "databaseType": {"type": ["string", "null"]}, "primaryKey": {"type": "boolean"}, "unique": {"type": "boolean"}, "nullable": {"type": ["boolean", "null"]}, "default": {}, "generated": {"type": ["string", "null"]}, "usages": {"type": "array", "items": {"type": "string"}}, "evidenceIds": {"type": "array", "items": {"type": "string"}}},
+      "additionalProperties": true
+    },
+    "databaseObject": {
+      "type": "object",
+      "required": ["id", "applicationId", "dataSourceId", "profile", "catalog", "schema", "name", "normalizedName", "objectType", "discoveryStatus", "columns", "primaryKeys", "uniqueConstraints", "indexes", "evidenceIds"],
+      "properties": {"id": {"type": "string"}, "applicationId": {"type": ["string", "null"]}, "dataSourceId": {"type": ["string", "null"]}, "profile": {"type": ["string", "null"]}, "catalog": {"type": ["string", "null"]}, "schema": {"type": ["string", "null"]}, "name": {"type": "string"}, "normalizedName": {"type": "string"}, "objectType": {"enum": ["TABLE", "VIEW", "MATERIALIZED_VIEW", "TEMPORARY", "PROCEDURE", "FUNCTION", "TRIGGER", "UNKNOWN"]}, "discoveryStatus": {"enum": ["DDL_AND_CODE", "DDL_ONLY", "CODE_ONLY"]}, "historicalNames": {"type": "array", "items": {"type": "string"}}, "possibleNames": {"type": "array", "items": {"type": "string"}}, "synonyms": {"type": "array", "items": {"type": "string"}}, "dynamicPattern": {"type": ["string", "null"]}, "columns": {"type": "array", "items": {"$ref": "#/$defs/column"}}, "primaryKeys": {"type": "array", "items": {"type": "array", "items": {"type": "string"}}}, "uniqueConstraints": {"type": "array", "items": {"type": "array", "items": {"type": "string"}}}, "indexes": {"type": "array"}, "evidenceIds": {"type": "array", "items": {"type": "string"}}},
+      "additionalProperties": true
+    },
+    "endpoint": {"type": "object", "required": ["objectId", "columnIds"], "properties": {"objectId": {"type": "string"}, "columnIds": {"type": "array", "items": {"type": "string"}}}},
+    "relationship": {
+      "type": "object",
+      "required": ["id", "from", "to", "sourceTypes", "conclusionKind", "confidence", "status", "directionKnown", "constraintCardinality", "codeCardinality", "optionality", "evidenceIds"],
+      "properties": {"id": {"type": "string"}, "from": {"$ref": "#/$defs/endpoint"}, "to": {"$ref": "#/$defs/endpoint"}, "sourceTypes": {"type": "array", "items": {"enum": ["DDL_FOREIGN_KEY", "ORM_RELATION", "RESULT_MAPPING", "SQL_JOIN", "SQL_COLUMN_COMPARISON", "CODE_INFERRED", "NAMING_CANDIDATE", "USER_CONFIRMED", "OBJECT_DEPENDENCY"]}}, "conclusionKind": {"enum": ["DECLARED", "INFERRED", "CANDIDATE", "USER_CONFIRMED"]}, "confidence": {"enum": ["HIGH", "MEDIUM", "LOW"]}, "status": {"enum": ["NORMAL", "CONDITIONAL", "CONFLICTED"]}, "directionKnown": {"type": "boolean"}, "constraintCardinality": {"enum": ["ONE_TO_ONE", "ONE_TO_MANY", "MANY_TO_ONE", "MANY_TO_MANY", "UNKNOWN"]}, "codeCardinality": {"enum": ["ONE_TO_ONE", "ONE_TO_MANY", "MANY_TO_ONE", "MANY_TO_MANY", "UNKNOWN"]}, "optionality": {"enum": ["REQUIRED", "OPTIONAL", "UNKNOWN"]}, "evidenceIds": {"type": "array", "items": {"type": "string"}}},
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": false
+}

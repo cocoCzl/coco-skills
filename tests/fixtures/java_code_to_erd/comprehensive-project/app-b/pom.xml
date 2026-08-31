@@ -1,0 +1,1 @@
+<project><dependencies><dependency><groupId>org.jooq</groupId><artifactId>jooq</artifactId></dependency><dependency><artifactId>spring-jdbc</artifactId></dependency></dependencies><build><plugins><plugin><artifactId>spring-boot-maven-plugin</artifactId></plugin></plugins></build></project>

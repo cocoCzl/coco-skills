@@ -65,6 +65,7 @@ python3 <skill-dir>/scripts/resume_skill.py route '<用户原始请求>'
 - 正式归档前取得一次明确授权；随后用不可覆盖的 `reports/ai-resume-expert/draft-###/`，不保存原始私有材料或聊天问答。
 - 没有用户明确确认 Markdown 时，不生成最终 PDF。确认后固定使用 Markdown → 独立 HTML → PDF，并绑定确认稿哈希。
 - PDF 必须经过自动校验和页面图像视觉检查；自动通过仍是 `visual_signoff_pending`，只有用户视觉签收后才可标为投递就绪。
+- macOS 上使用 LibreOffice 且当前 Agent 有命令沙箱时，必须让整个 `resume_skill.py render` 命令请求沙箱外执行；只放行它内部调用的 `soffice` 无法让已经受限的父进程脱离沙箱。批准范围应精确到该脚本的 `render` 子命令，不要关闭整个 Codex 沙箱。
 
 相关统一命令：
 
@@ -75,4 +76,4 @@ python3 <skill-dir>/scripts/resume_skill.py validate resume-package.json
 python3 <skill-dir>/scripts/resume_skill.py render confirmed-resume.md --confirmed --package resume-package.json
 ```
 
-PDF 渲染器和验收依赖缺失时交付 Markdown 与可打印 HTML，并明确降级；不要把未验证 PDF 称为合格。归档、职业证据库、高级 PDF 操作和完整质量门槛按 references 与底层 `--help` 执行。
+PDF 渲染器和验收依赖缺失、沙箱外执行未获批准或渲染失败时，交付 Markdown 与可打印 HTML并明确降级；不要把未验证 PDF 称为合格。归档、职业证据库、高级 PDF 操作和完整质量门槛按 references 与底层 `--help` 执行。

@@ -175,6 +175,17 @@ class SkillReleaseContractTests(unittest.TestCase):
             with self.subTest(phrase=phrase):
                 self.assertIn(phrase, text)
 
+    def test_macos_pdf_guidance_uses_scoped_outer_command_escalation(self) -> None:
+        skill = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+        readme = (SKILL / "README.md").read_text(encoding="utf-8")
+        for text in (skill, readme):
+            with self.subTest(source=text[:40]):
+                self.assertIn("resume_skill.py render", text)
+                self.assertIn("沙箱外", text)
+                self.assertIn("不要关闭整个 Codex 沙箱", text)
+        self.assertIn("Abort trap: 6", readme)
+        self.assertIn("退出码 `134`", readme)
+
     def test_experienced_candidate_structure_requires_separate_star_sections(self) -> None:
         skill = (SKILL / "SKILL.md").read_text(encoding="utf-8")
         rules = (SKILL / "references" / "common-resume-rules.md").read_text(encoding="utf-8")

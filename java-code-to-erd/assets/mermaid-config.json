@@ -1,0 +1,14 @@
+{
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Inter, Noto Sans SC, Arial, sans-serif",
+    "primaryColor": "#EFF6FF",
+    "primaryTextColor": "#172033",
+    "primaryBorderColor": "#3B82F6",
+    "lineColor": "#64748B",
+    "secondaryColor": "#F8FAFC",
+    "tertiaryColor": "#ECFDF5"
+  },
+  "flowchart": {"curve": "basis", "htmlLabels": true},
+  "er": {"diagramPadding": 24, "layoutDirection": "TB", "minEntityWidth": 120, "minEntityHeight": 80}
+}

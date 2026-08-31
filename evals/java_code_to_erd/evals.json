@@ -1,0 +1,75 @@
+{
+  "skill_name": "java-code-to-erd",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "使用 java-code-to-erd 分析这个 Spring Boot 项目并生成 ERD。",
+      "expected_output": "先做安全预检，再全项目发现，生成经过校验的模型、ERD、DBML 和报告。",
+      "files": ["tests/fixtures/java_code_to_erd/mixed-project"],
+      "expectations": ["不连接数据库或运行项目", "database-model.json 是展示文件的唯一来源", "报告包含扫描覆盖和技术检测"]
+    },
+    {
+      "id": 2,
+      "prompt": "分析 app_user 和 department 的关系，告诉我它到底是外键、ORM 关系还是代码 JOIN。",
+      "expected_output": "合并相同端点并分别列出 DDL、ORM 和 JOIN 来源。",
+      "files": ["tests/fixtures/java_code_to_erd/mixed-project"],
+      "expectations": ["只展示一条汇总关系", "保留 DDL_FOREIGN_KEY、ORM_RELATION、SQL_JOIN 三种来源", "Evidence 只有相对路径和行号"]
+    },
+    {
+      "id": 3,
+      "prompt": "只查询 app_user 与直接相关表，不需要保存完整报告。",
+      "expected_output": "返回单对象范围的关系结果，不创建报告或缓存目录。",
+      "files": ["tests/fixtures/java_code_to_erd/mixed-project"],
+      "expectations": ["结果包含 app_user 和 department", "不创建 reports 目录", "使用与全项目一致的可信度规则"]
+    },
+    {
+      "id": 4,
+      "prompt": "项目没有 DDL，只有 MyBatis XML 的 LEFT JOIN，请生成关系图。",
+      "expected_output": "识别高可信 SQL 逻辑关系，但在方向、数量或可选性不足时进入逻辑关系图。",
+      "files": [],
+      "expectations": ["不把 JOIN 称为物理外键", "未知数量关系不画成确定 Crow's Foot", "DBML 不生成正式 Ref"]
+    },
+    {
+      "id": 5,
+      "prompt": "audit_log 有 department_id，department 有 id，除此之外没有证据，帮我画关系。",
+      "expected_output": "最多创建低可信命名候选，并从默认图和正式 DBML Ref 排除。",
+      "files": [],
+      "expectations": ["候选可信度为 LOW", "报告明确说明只有命名线索", "默认 ERD 不画候选关系"]
+    },
+    {
+      "id": 6,
+      "prompt": "JPA JoinColumn 指向 dept_id，但迁移 SQL 外键指向 company_id，请按你认为正确的画。",
+      "expected_output": "保留两方证据并标记冲突，不自行投票选择。",
+      "files": [],
+      "expectations": ["状态降级为 PARTIAL", "冲突关系不进入默认 ERD", "报告给出冲突文件和行号"]
+    },
+    {
+      "id": 7,
+      "prompt": "重新分析刚才的项目，我删除了旧迁移和 Mapper。",
+      "expected_output": "增量缓存移除失效 Evidence，结果与完整重扫一致。",
+      "files": [],
+      "expectations": ["删除文件的 Evidence 不残留", "失去全部证据的结论被删除", "相同当前输入重复运行字节稳定"]
+    },
+    {
+      "id": 8,
+      "prompt": "这个仓库同时用了 jOOQ 和普通 JDBC SQL，分析数据库模型。",
+      "expected_output": "检测未深度支持的 jOOQ 并降级，同时继续分析可确定的普通 SQL。",
+      "files": [],
+      "expectations": ["报告 jOOQ 未支持影响", "普通 SQL 事实仍进入模型", "不扫描或反编译外部 JAR"]
+    },
+    {
+      "id": 9,
+      "prompt": "订单项目有 80 张表，生成一套好看的 ERD，不要一张图塞完。",
+      "expected_output": "生成稳定总览和按关系连通性的详细分组图。",
+      "files": [],
+      "expectations": ["总览不展示全部字段", "详细图使用稳定中性 cluster 名", "跨 cluster 关系保留在总览和报告"]
+    },
+    {
+      "id": 10,
+      "prompt": "电脑没有 Mermaid CLI，也不允许装东西，继续分析并交付。",
+      "expected_output": "不安装或联网，交付 Mermaid 源、模型、DBML 和报告并说明视觉检查状态。",
+      "files": ["tests/fixtures/java_code_to_erd/mixed-project"],
+      "expectations": ["不执行安装命令", "保留语法稳定的 .mmd", "visualStatus 标记为 SOURCE_ONLY"]
+    }
+  ]
+}

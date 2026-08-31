@@ -1,0 +1,4 @@
+interface:
+  display_name: "Java Code to ERD"
+  short_description: "从 Java 项目代码生成可追溯数据库模型和 ERD"
+  default_prompt: "分析当前 Java 项目使用的数据库对象和关系，生成证据支持的 ERD、DBML 和报告。"

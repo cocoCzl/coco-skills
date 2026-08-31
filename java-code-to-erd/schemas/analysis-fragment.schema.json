@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "required": ["schemaVersion", "file", "contentHash", "ruleVersion", "observations", "unresolved"],
+  "properties": {
+    "schemaVersion": {"const": "1.0"}, "file": {"type": "string"}, "contentHash": {"type": "string"}, "ruleVersion": {"type": "string"},
+    "observations": {"type": "array", "items": {"type": "object"}}, "unresolved": {"type": "array", "items": {"type": "object"}}
+  }, "additionalProperties": false
+}

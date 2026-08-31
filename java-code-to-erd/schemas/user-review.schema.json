@@ -1,0 +1,6 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object", "required": ["schemaVersion", "reviews"],
+  "properties": {"schemaVersion": {"const": "1.0"}, "reviews": {"type": "array", "items": {"type": "object", "required": ["id", "action", "fromTable", "fromColumns", "toTable", "toColumns"], "properties": {"id": {"type": "string"}, "action": {"enum": ["CONFIRM", "EXCLUDE", "CORRECT"]}, "fromTable": {"type": "string"}, "fromColumns": {"type": "array", "items": {"type": "string"}}, "toTable": {"type": "string"}, "toColumns": {"type": "array", "items": {"type": "string"}}, "reason": {"type": ["string", "null"]}}}}},
+  "additionalProperties": false
+}

@@ -1,0 +1,1 @@
+<databaseChangeLog><changeSet id="1" author="demo"><createTable tableName="audit_event"><column name="id" type="BIGINT"><constraints primaryKey="true"/></column><column name="user_id" type="BIGINT"/></createTable><rollback><dropTable tableName="audit_event"/></rollback></changeSet></databaseChangeLog>

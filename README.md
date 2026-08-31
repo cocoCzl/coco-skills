@@ -8,6 +8,7 @@
 |---|---|---|
 | `ai-resume-expert` | 面向中国大陆技术岗位的证据优先简历生成、诊断、JD 定制与本地 PDF 交付 | [`ai-resume-expert/SKILL.md`](ai-resume-expert/SKILL.md) |
 | `football-betting-assistant` | 中文足球竞彩、赛前分析、胜平负、让球、比分、大小球、串关和赛后复盘辅助 | [`football-betting-assistant/SKILL.md`](football-betting-assistant/SKILL.md) |
+| `java-code-to-erd` | 从 Java 项目源码和 SQL 反向整理可验证的数据库模型、ERD、DBML 与报告 | [`java-code-to-erd/SKILL.md`](java-code-to-erd/SKILL.md) |
 | `lottery-number-recommendation` | 大乐透与双色球的完整历史校验、号码推荐和回测辅助 | [`lottery-number-recommendation/SKILL.md`](lottery-number-recommendation/SKILL.md) |
 
 ## 安装使用
@@ -139,6 +140,7 @@ evals/
 
 - `reports/ai-resume-expert/`
 - `reports/football-betting-assistant/`
+- `reports/java-code-to-erd/`
 - `reports/lottery-number-recommendation/`（仅在用户要求把推荐或回测保存为文件时创建）
 
 不要再创建通用 `output/` 目录，也不要把生成物写进 Skill 安装目录。同步历史、预测快照等可复用运行数据继续放在各 Skill 已声明的 `data/` 命名空间中，不与用户可见报告混放。

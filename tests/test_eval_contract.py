@@ -11,7 +11,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-SKILLS = ("ai_resume_expert", "football_betting_assistant", "lottery_number_recommendation")
+SKILLS = ("ai_resume_expert", "football_betting_assistant", "java_code_to_erd", "lottery_number_recommendation")
 
 
 class EvalContractTests(unittest.TestCase):

@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://coco-skills.local/java-code-to-erd/agent-result.schema.json",
+  "title": "Java Code to ERD agent result",
+  "type": "object",
+  "required": ["schema_version", "skill", "command", "status", "data_status", "next_action", "artifacts", "warnings", "error_code", "metrics"],
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "skill": {"const": "java-code-to-erd"},
+    "command": {"type": "string", "minLength": 1},
+    "status": {"enum": ["ready", "completed", "blocked", "degraded", "error"]},
+    "data_status": {"enum": ["READY", "COMPLETE", "PARTIAL", "FAILED"]},
+    "next_action": {"type": ["string", "null"]},
+    "artifacts": {"type": "array", "items": {"type": "string"}},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "error_code": {"type": ["string", "null"]},
+    "metrics": {"type": "object", "required": ["elapsed_ms"], "properties": {"elapsed_ms": {"type": "number", "minimum": 0}}},
+    "data": {"type": ["object", "null"]}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,26 @@
+{
+  "skill_name": "java-code-to-erd",
+  "purpose": "验证 Java 代码反向数据库模型请求的触发边界。",
+  "queries": [
+    {"id":"trigger-01","query":"分析当前 Spring Boot 仓库实际访问了哪些表，并生成 ERD。","should_trigger":true,"reason":"全项目 Java code-to-ERD。"},
+    {"id":"trigger-02","query":"帮我查清 sys_user.dept_id 和其他表的关系，每条结论要能验证。","should_trigger":true,"reason":"单表关系调查。"},
+    {"id":"trigger-03","query":"这个 Java 项目只有 MyBatis XML，没有 DDL，能反推数据库模型吗？","should_trigger":true,"reason":"从 Mapper SQL 反推。"},
+    {"id":"trigger-04","query":"从 JPA Entity、JoinColumn 和 Flyway migration 生成 Crow's Foot 图。","should_trigger":true,"reason":"JPA 与迁移综合分析。"},
+    {"id":"trigger-05","query":"订单模块用了 JdbcTemplate 和字符串 SQL，整理涉及表并输出 DBML。","should_trigger":true,"reason":"Java SQL 和指定范围。"},
+    {"id":"trigger-06","query":"检查项目里的数据库关系有没有 DDL 和代码冲突，给出路径行号。","should_trigger":true,"reason":"关系冲突审查。"},
+    {"id":"trigger-07","query":"重新扫描这个 Java 仓库，增量更新之前生成的 database-model.json。","should_trigger":true,"reason":"增量模型更新。"},
+    {"id":"trigger-08","query":"项目表太多了，把 ERD 拆成总览和几张容易看的关系图。","should_trigger":true,"reason":"大型 Java 项目 ERD。"},
+    {"id":"trigger-09","query":"分析 MyBatis-Plus 的 TableName、BaseMapper 和 LambdaQueryWrapper 用到的字段。","should_trigger":true,"reason":"MyBatis-Plus 数据模型分析。"},
+    {"id":"trigger-10","query":"不要连数据库，只看这个 Java 单体仓库，告诉我真实外键和逻辑 JOIN 的区别。","should_trigger":true,"reason":"明确安全边界的代码推导。"},
+    {"id":"no-trigger-01","query":"连接生产 MySQL，读取 information_schema 后生成最新 ER 图。","should_trigger":false,"reason":"请求连接真实数据库。"},
+    {"id":"no-trigger-02","query":"我们准备开发新商城，请从零设计用户、订单、支付数据库表。","should_trigger":false,"reason":"正向数据库设计。"},
+    {"id":"no-trigger-03","query":"审查这个 Java 项目的线程安全、异常处理和代码风格。","should_trigger":false,"reason":"普通 Java 代码审查。"},
+    {"id":"no-trigger-04","query":"把这份现成的 PostgreSQL DDL 转成一张 ERD，不涉及任何 Java 项目。","should_trigger":false,"reason":"纯 DDL 转图而非 Java code-to-ERD。"},
+    {"id":"no-trigger-05","query":"分析 Django models.py 和 Alembic migration 使用的数据库关系。","should_trigger":false,"reason":"Python 项目。"},
+    {"id":"no-trigger-06","query":"从 Node.js Prisma schema 和 TypeORM Entity 生成数据库模型。","should_trigger":false,"reason":"Node.js 项目。"},
+    {"id":"no-trigger-07","query":"帮我优化这个慢 SQL，解释执行计划并建议索引。","should_trigger":false,"reason":"SQL 性能优化。"},
+    {"id":"no-trigger-08","query":"运行 Flyway migration 修复开发库，再检查表是否创建成功。","should_trigger":false,"reason":"请求执行迁移和访问数据库。"},
+    {"id":"no-trigger-09","query":"根据产品需求画一个领域模型类图，包含订单聚合和值对象。","should_trigger":false,"reason":"领域类图不是数据库反向分析。"},
+    {"id":"no-trigger-10","query":"比较 dbdiagram.io、DrawSQL 和 DBeaver 哪个画 ERD 更方便。","should_trigger":false,"reason":"工具选型，不分析 Java 项目。"}
+  ]
+}
