@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ast
+import json
 import pathlib
 import re
 import subprocess
@@ -33,6 +34,7 @@ IGNORED_DIRS = {
 }
 FRONTMATTER_KEY = re.compile(r"^([A-Za-z][A-Za-z0-9_-]*)\s*:\s*(.*)$")
 README_SKILL_LINK = re.compile(r"\]\(\s*(?:\./)?(?P<target>[^)\s]+/SKILL\.md)\s*\)")
+MARKDOWN_LINK = re.compile(r"\]\((?P<target>[^)\s]+)(?:\s+\"[^\"]*\")?\)")
 LOCAL_ONLY_DIRECTORIES = {
     ".agent",
     ".agents",
@@ -164,6 +166,98 @@ def readme_registers_skill(readme: str, skill: pathlib.Path) -> bool:
     return any(match.group("target") == expected for match in README_SKILL_LINK.finditer(readme))
 
 
+def eval_directory_name(skill: pathlib.Path) -> str:
+    """Map a distributable skill directory to its repository eval directory."""
+
+    return skill.name.replace("-", "_")
+
+
+def check_markdown_links(skill: pathlib.Path) -> list[str]:
+    """Return missing local links from SKILL.md without policing web links."""
+
+    errors: list[str] = []
+    text = (skill / "SKILL.md").read_text(encoding="utf-8")
+    for match in MARKDOWN_LINK.finditer(text):
+        raw_target = match.group("target")
+        target = raw_target.split("#", 1)[0]
+        if not target or "://" in target or target.startswith(("mailto:", "#")):
+            continue
+        candidate = (skill / target).resolve()
+        try:
+            candidate.relative_to(skill.resolve())
+        except ValueError:
+            errors.append("link escapes skill directory: {0}".format(raw_target))
+            continue
+        if not candidate.exists():
+            errors.append("missing local link target: {0}".format(raw_target))
+    return errors
+
+
+def check_evals(skill: pathlib.Path) -> list[str]:
+    """Validate the repository-level behavior and trigger regression sets."""
+
+    directory = ROOT / "evals" / eval_directory_name(skill)
+    behavior_path = directory / "evals.json"
+    trigger_path = directory / "trigger-evals.json"
+    errors: list[str] = []
+    if not behavior_path.is_file() or not trigger_path.is_file():
+        return ["missing repository evals/evals.json or trigger-evals.json"]
+    try:
+        behavior = json.loads(behavior_path.read_text(encoding="utf-8"))
+        trigger = json.loads(trigger_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return ["invalid evaluation JSON: {0}".format(exc)]
+
+    cases = behavior.get("evals") if isinstance(behavior, dict) else None
+    if not isinstance(cases, list) or len(cases) < 10:
+        errors.append("behavior evals must contain at least 10 cases")
+    else:
+        ids = [str(item.get("id", "")) for item in cases if isinstance(item, dict)]
+        if len(ids) != len(cases) or not all(ids) or len(set(ids)) != len(ids):
+            errors.append("behavior eval IDs must be present and unique")
+        for item in cases:
+            if not isinstance(item, dict) or not all(
+                isinstance(item.get(key), str) and item[key].strip()
+                for key in ("prompt", "expected_output")
+            ):
+                errors.append("each behavior eval needs non-empty prompt and expected_output")
+                break
+            expectations = item.get("expectations")
+            if not isinstance(expectations, list) or len(expectations) < 3:
+                errors.append("each behavior eval needs at least 3 expectations")
+                break
+
+    queries = trigger.get("queries") if isinstance(trigger, dict) else None
+    if not isinstance(queries, list) or len(queries) < 20:
+        errors.append("trigger evals must contain at least 20 near-neighbor queries")
+    else:
+        positive = negative = 0
+        ids: list[str] = []
+        for item in queries:
+            if not isinstance(item, dict):
+                errors.append("each trigger eval must be an object")
+                break
+            ids.append(str(item.get("id", "")))
+            query = item.get("query")
+            reason = item.get("reason")
+            decision = item.get("should_trigger")
+            if not isinstance(query, str) or len(query.strip()) < 15 or not isinstance(reason, str) or not reason.strip():
+                errors.append("each trigger eval needs a realistic query and reason")
+                break
+            if decision is True:
+                positive += 1
+            elif decision is False:
+                negative += 1
+            else:
+                errors.append("each trigger eval needs boolean should_trigger")
+                break
+        if not all(ids) or len(ids) != len(set(ids)):
+            errors.append("trigger eval IDs must be present and unique")
+        if positive < 8 or negative < 8 or positive != negative:
+            errors.append("trigger evals must be balanced with at least 8 positive and 8 negative cases")
+    return errors
+
+
 def main() -> int:
     skills = discover_skills()
     if not skills:
@@ -207,6 +301,20 @@ def main() -> int:
                     print("Frontmatter description must be non-empty.")
                 else:
                     print("Frontmatter description present.")
+            line_count = len((skill / "SKILL.md").read_text(encoding="utf-8").splitlines())
+            if line_count > 500:
+                failed = True
+                print("SKILL.md exceeds 500 lines; move detailed material into references/.")
+            else:
+                print("SKILL.md stays within the progressive-disclosure budget.")
+            link_errors = check_markdown_links(skill)
+            if link_errors:
+                failed = True
+                print("Broken SKILL.md links:")
+                for error in link_errors:
+                    print("- {0}".format(error))
+            else:
+                print("SKILL.md local links resolve.")
 
         interface_schema = skill / "schemas" / "agent-result.schema.json"
         if not interface_schema.is_file():
@@ -230,6 +338,15 @@ def main() -> int:
                     print("Agent result schema is missing required envelope fields.")
                 else:
                     print("Agent result schema present.")
+
+        eval_errors = check_evals(skill)
+        if eval_errors:
+            failed = True
+            print("Evaluation contract failures:")
+            for error in eval_errors:
+                print("- {0}".format(error))
+        else:
+            print("Behavior and trigger evaluation sets are release-ready.")
 
         if not readme_registers_skill(root_readme, skill):
             failed = True

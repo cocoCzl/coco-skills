@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline, deterministic latency checks for the three agent entrypoints."""
+"""Offline, deterministic latency checks for every agent-facing entrypoint."""
 
 from __future__ import annotations
 
@@ -38,6 +38,7 @@ def main() -> int:
             "resume_route": measure([python, "ai-resume-expert/scripts/resume_skill.py", "route", "优化 Java 后端简历"]),
             "football_doctor": measure([python, "football-betting-assistant/scripts/football_skill.py", "doctor"]),
             "football_route": measure([python, "football-betting-assistant/scripts/football_skill.py", "route", "明天竞彩四串一"]),
+            "java_erd_doctor": measure([python, "java-code-to-erd/scripts/launch.py", "doctor", "--project", str(ROOT)]),
             "lottery_doctor": measure([python, "lottery-number-recommendation/scripts/lottery_skill.py", "--data-dir", tmp, "doctor"]),
             "lottery_parse": measure([python, "lottery-number-recommendation/scripts/lottery_skill.py", "parse-request", "双色球三注最近50期强热号"]),
         }

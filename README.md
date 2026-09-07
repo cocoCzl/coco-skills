@@ -156,6 +156,8 @@ python3 football-betting-assistant/scripts/validate_inputs.py examples/football_
 python3 football-betting-assistant/scripts/fetch_match_data.py --football --raw-input tests/fixtures/football_betting_assistant/raw/sporttery-football-sample.json --out /private/tmp/football-snapshots
 ```
 
+所有可发布 Skill 的共同质量门槛见 [`QUALITY_STANDARD.md`](QUALITY_STANDARD.md)。它把可发现性、授权与降级、证据可信度、可验证输出、性能和长期回归保护落成了可执行检查。
+
 GitHub Actions 会在 Python 3.10 和 3.12 上运行结构检查与全量单元测试；另有固定 Ubuntu 24.04 + Python 3.12 的 PDF QA，安装 WeasyPrint、Poppler 和 Noto CJK 字体后强制执行真实 PDF 渲染与验收测试。PDF 栈不可用时该 QA 会失败，不会静默跳过。
 
 ## 贡献
