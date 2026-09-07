@@ -721,7 +721,7 @@ def recommend(args: argparse.Namespace) -> dict[str, Any]:
     if not response_games:
         reasons = "；".join(item["label"] + "：" + item["reason"] for item in unavailable)
         raise LotteryError(reasons or "没有可生成号码的彩票")
-    return {"games": response_games, "unavailable_games": unavailable, "disclaimer": "仅供娱乐与参考，不保证中奖。"}
+    return {"games": response_games, "unavailable_games": unavailable}
 
 
 MODE_LABELS = {"random": "随机未出现组合", "hot": "热号倾向", "hot_legacy": "旧线性热号（仅回测）", "cold": "冷号倾向"}
@@ -782,7 +782,6 @@ def render_recommendation(result: dict[str, Any]) -> str:
                 lines.append(statistic)
     for unavailable in result.get("unavailable_games", []):
         lines.append(f"{unavailable['label']}｜未生成：{unavailable['reason']}")
-    lines.append(result.get("disclaimer", "仅供娱乐与参考，不保证中奖。"))
     return "\n".join(lines)
 
 
@@ -937,7 +936,7 @@ def backtest(args: argparse.Namespace) -> dict[str, Any]:
             "prize_hits": {str(level): round(prize_hits[mode][level] / trials_per_period, 4) for level in sorted(prize_hits[mode])},
             "relative_to_random": comparisons.get(mode),
         } for mode in modes],
-        "note": "回测仅描述历史表现，不保证未来表现；只有相对随机的 95% 置信区间下界大于零，才可视为该历史划分下的改善。",
+        "note": "回测结果对应本次历史区间和策略参数；只有相对随机的 95% 置信区间下界大于零，才可视为该历史划分下的改善。",
     }
 
 

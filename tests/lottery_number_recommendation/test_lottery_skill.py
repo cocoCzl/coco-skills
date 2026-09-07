@@ -282,7 +282,7 @@ class LotterySkillTests(unittest.TestCase):
                 lottery_skill.sync_official_history = original_sync
             self.assertEqual([item["game"] for item in result["games"]], ["dlt", "ssq"])
             self.assertFalse(result["unavailable_games"])
-            self.assertEqual(result["disclaimer"], "仅供娱乐与参考，不保证中奖。")
+            self.assertNotIn("disclaimer", result)
 
     def test_sync_failure_marks_existing_snapshot_unavailable(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
@@ -314,13 +314,14 @@ class LotterySkillTests(unittest.TestCase):
                 "label": "双色球", "mode": "hot", "window": 50, "strength": "strong",
                 "data_status": {"latest_issue": "2013002", "latest_date": "2013-01-03", "history_coverage": {"kind": "official_available_history", "from_issue": "2013001"}, "public_context": {"pool_balance": "1000000", "draw_notice_path": "/notice"}},
                 "recommendations": [{"index": 1, "display": "红球 01 02 03 04 05 06 ｜ 蓝球 07", "stats": {"red": {"01": 3}, "blue": {"07": 1}}}],
-            }], "unavailable_games": [], "disclaimer": "仅供娱乐与参考，不保证中奖。",
+            }], "unavailable_games": [],
         }
         text = lottery_skill.render_recommendation(result)
         self.assertIn("官网历史 2013001 至 2013002", text)
         self.assertIn("官方奖池：1000000", text)
         self.assertIn("热度：红球 01(3)；蓝球 07(1)", text)
-        self.assertTrue(text.endswith("仅供娱乐与参考，不保证中奖。"))
+        self.assertNotIn("仅供娱乐", text)
+        self.assertNotIn("不保证中奖", text)
 
     def test_public_context_does_not_change_generation(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

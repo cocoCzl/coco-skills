@@ -66,7 +66,7 @@ def parse_request_text(text: str, games_available: list[str]) -> dict[str, Any]:
         raise ValueError("请说明要查询的数据状态、回测，或大乐透/双色球选号请求")
     normalized = text.strip()
     if any(term in normalized for term in ("必中", "保证中奖", "保证盈利", "最大概率发财")):
-        return {"action": "refuse", "reason": "不承诺中奖、盈利或最大概率；仅可提供娱乐性号码推荐"}
+        return {"action": "refuse", "reason": "无法提供保证中奖、盈利或最大概率的选号；可改为生成号码或运行历史回测"}
     games = matched_games(normalized)
     if any(term in normalized for term in ("数据状态", "检查数据", "同步历史数据")):
         return {"action": "status", "games": games or games_available}
