@@ -21,4 +21,16 @@ python3 ai-resume-expert/scripts/resume_skill.py route '优化我的后端工程
 
 正式交付物写入当前工作目录的 `reports/ai-resume-expert/`，不会写入 Skill 安装目录。Markdown 是权威源文件；PDF 需要用户确认 Markdown、通过本地自动检查，并由用户完成最终视觉签收。
 
+## macOS PDF 渲染提示
+
+在 macOS 上通过 LibreOffice 渲染 PDF、且当前 Agent 使用命令沙箱时，应让整个 `resume_skill.py render` 命令请求沙箱外执行。仅放行该命令内部的 `soffice` 无法让受限的父进程脱离沙箱；批准范围应精确到 `render` 子命令，**不要关闭整个 Codex 沙箱**。
+
+例如：
+
+```bash
+python3 ai-resume-expert/scripts/resume_skill.py render confirmed-resume.md --confirmed --package resume-package.json
+```
+
+如果 LibreOffice 出现 `Abort trap: 6`（退出码 `134`），应将其视为渲染失败：保留并交付已确认的 Markdown 与可打印 HTML，说明降级原因；不要把未验证的 PDF 称为合格交付物。
+
 完整支持范围、授权边界、交付门槛和 PDF 降级规则见 [SKILL.md](SKILL.md)。虚构示例见 [examples](../examples/ai_resume_expert/README.md)。
