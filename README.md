@@ -68,6 +68,8 @@ evals/                      # 行为验收样例
 
 质量要求见 [QUALITY_STANDARD.md](QUALITY_STANDARD.md)，贡献方式见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
+结构检查、脚本行为测试和真实 Agent 评测分别报告；评测 JSON 合格不表示任务效果通过。明确任务直接执行对应操作，诊断命令和资料按需；扫描、同步和事实校验保留必要边界。真实评测方式见 [evals/README.md](evals/README.md)。
+
 ## License
 
 [MIT](LICENSE)

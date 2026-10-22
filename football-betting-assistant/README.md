@@ -20,3 +20,5 @@ python3 football-betting-assistant/scripts/football_skill.py route '明天竞彩
 正式赛前分析会核实赛程、赔率、可售玩法、球队信息和赛事背景。缺少可验证数据时会降级或停止，不会用记忆补全。HTML 报告写入 `reports/football-betting-assistant/`，快照与复盘数据写入 `data/football/`。
 
 完整流程、数据边界、模型和输出规则见 [SKILL.md](SKILL.md)；可复制的提问示例见 [examples](../examples/football_betting_assistant/README.md)。
+
+明确操作直接执行；`doctor`/`route` 仅按需。简单查询或局部解释直接聊天，完整分析才生成报告和快照。内置 `fetch --mode china-lottery` 仅支持 Sporttery；海外赔率需已有/另行授权来源，缺少时明确降级，不切换来源。`report` 已执行校验和风险审计，相同输入无需重复跑。

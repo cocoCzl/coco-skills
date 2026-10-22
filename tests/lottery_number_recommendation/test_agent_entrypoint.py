@@ -34,9 +34,21 @@ class LotteryAgentEntrypointTests(unittest.TestCase):
         self.assertLess(payload["metrics"]["elapsed_ms"], 500)
 
     def test_failure_has_stable_error_and_no_numbers(self) -> None:
+        # Exercise the real CLI/sync error path without depending on whether
+        # this machine can reach the official source.
+        offline_runner = """
+import runpy
+import sys
+from unittest.mock import patch
+from urllib.error import URLError
+entry = sys.argv.pop(1)
+sys.argv[0] = entry
+with patch('urllib.request.urlopen', side_effect=URLError('simulated offline source')):
+    runpy.run_path(entry, run_name='__main__')
+"""
         with tempfile.TemporaryDirectory() as tmp:
             result = subprocess.run(
-                ["python3", str(ENTRY), "--data-dir", tmp, "backtest", "dlt", "--trials", "1", "--bootstrap-samples", "1"],
+                ["python3", "-c", offline_runner, str(ENTRY), "--data-dir", tmp, "backtest", "dlt", "--trials", "1", "--bootstrap-samples", "1"],
                 cwd=ROOT,
                 text=True,
                 capture_output=True,

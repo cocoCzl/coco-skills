@@ -16,10 +16,10 @@
 | 文件 | 读取时机 | 用途 |
 |---|---|---|
 | `evidence-record.schema.json` | 从访谈、原简历、代码或文档建立素材清单时 | 表达来源、状态、归属确认、披露、量化依据和冲突；`observed_project_fact` 不能证明个人贡献 |
-| `resume-package.schema.json` | 生成 Markdown 前，以及用户确认 Markdown、准备生成 PDF 前 | 把目标岗位、时间线、正式陈述、技能、追踪表、自审、确认哈希和联系方式放入同一交付门槛 |
+| `resume-package.schema.json` | 需要结构化交接/包校验时，以及用户确认 Markdown、准备生成 PDF 前；普通文字初稿无需建包 | 把目标岗位、时间线、正式陈述、技能、追踪表、自审、确认哈希和联系方式放入同一交付门槛 |
 | `evidence-trace.schema.json` | 需要把证据追踪表作为独立产物交付或复验时 | 在不复制简历全文的前提下，把正式陈述关联到职业事实 |
 | `career-evidence-store.schema.json` | 用户明确选择创建、更新或复用本地职业证据库时 | 保存与目标岗位/JD 文案分离的已确认、可披露职业事实 |
-| `pdf-visual-signoff.schema.json` | 自动 PDF 验收通过、用户逐页确认彩色与灰度预览后 | 绑定自动验收报告、当前 PDF、Markdown 和预览文件哈希；只有有效记录才能解除 PDF 交付阻断 |
+| `pdf-visual-signoff.schema.json` | 自动 PDF 验收通过、用户逐页确认彩色与灰度预览后 | 绑定自动验收报告、当前 PDF、Markdown 和预览文件哈希；有效记录使状态成为已获用户签收的 qualified；Agent 视觉检查通过的待审阅 PDF 无需额外签收即可交付 |
 
 规则边界：
 
@@ -28,7 +28,7 @@
 - 数字型结果的 `source_ids` 必须真实存在于所引用事实的 `sources` 中，并具有依据与用户确认。
 - `disclosure.status: approved` 或 `sanitized` 只有在 `confirmed_by_user: true` 后才可支持投递文案；`sanitized` 还必须提供 `sanitized_statement`。原内部陈述不得进入职业证据库或正式简历。
 - `conflict.status: resolved` 必须同时记录非空 `resolution` 和 `resolved_by_user: true`；没有用户澄清的冲突仍是阻断项。
-- Schema 是交换格式；实际交付还必须运行确定性校验器。所有 CLI 正常输出和错误输出都是 JSON，阻断时返回非零状态码。
+- Schema 是交换格式；创建或消费这些结构化产物时必须运行确定性校验器。普通文字诊断/Markdown 无需额外创建 JSON 包。所有 CLI 正常输出和错误输出都是 JSON，阻断时返回非零状态码。
 
 ## CLI 速查
 

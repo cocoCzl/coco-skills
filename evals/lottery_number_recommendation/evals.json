@@ -84,6 +84,17 @@
       "expected_output": "使用 doctor/status 只读检查，明确 network_tested=false，并给 ready 或同步下一步。",
       "files": [],
       "expectations": ["使用无联网 doctor/status", "明确 network_tested=false", "返回 ready_games 和每种彩票状态", "缺缓存时只建议 sync"]
+    },
+    {
+      "id": 13,
+      "prompt": "今天已同步过双色球，给我 3 注热号，最近 50 期。无需回测。",
+      "expected_output": "直接 recommend，内部检查最新页并复用当日完整缓存。",
+      "expectations": [
+        "不先运行独立 sync/doctor，不重复全量扫描",
+        "保留最新页校验、历史过滤和审计；同步失败不给号码",
+        "不附带回测，不降低每日历史更正复核标准"
+      ],
+      "files": []
     }
   ]
 }

@@ -871,7 +871,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
         base["pdf_qualified"] = bool(validation["qualified"])
         base["automatic_qualified"] = bool(validation.get("automatic_qualified"))
         base["visual_signoff_pending"] = bool(validation.get("visual_signoff_pending"))
-        base["delivery_blocked"] = not bool(validation["qualified"])
+        base["delivery_blocked"] = bool(validation.get("delivery_blocked", True))
         base["degradation"] = None
         if validation["qualified"]:
             base["status"] = "qualified"

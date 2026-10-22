@@ -121,6 +121,18 @@
       "query": "为我现有的算法论文生成 BibTeX、摘要和投稿 cover letter。",
       "should_trigger": false,
       "reason": "学术发表材料不属于技术求职简历。"
+    },
+    {
+      "id": "trigger-21",
+      "query": "请诊断这份测试开发岗位的 PDF 简历，先不要导出任何新文件。",
+      "should_trigger": true,
+      "reason": "区分简历领域任务和纯 PDF 技术解释"
+    },
+    {
+      "id": "trigger-22",
+      "query": "请解释 PDF 文件格式如何存储字体，示例文件恰好是一份简历。",
+      "should_trigger": false,
+      "reason": "区分简历领域任务和纯 PDF 技术解释"
     }
   ]
 }

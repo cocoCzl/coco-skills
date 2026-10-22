@@ -10,7 +10,9 @@ import tempfile
 import time
 import xml.etree.ElementTree as ET
 from collections import defaultdict, deque
+from contextvars import ContextVar
 from dataclasses import dataclass, field
+from functools import wraps
 from pathlib import Path
 from typing import Any, Iterable, Iterator
 
@@ -18,6 +20,32 @@ from typing import Any, Iterable, Iterator
 SKILL = "java-code-to-erd"
 SCHEMA_VERSION = "1.0"
 RULE_VERSION = "1.2.0"
+CHECKPOINT_FILES = 64
+CHECKPOINT_SECONDS = 2.0
+_source_snapshot: ContextVar[dict[Path, bytes] | None] = ContextVar("source_snapshot", default=None)
+
+
+def source_bytes(path: Path) -> bytes:
+    """One byte snapshot per analysis, shared by hashes, parsers and inference."""
+    snapshot = _source_snapshot.get()
+    if snapshot is None:
+        return path.read_bytes()
+    if path not in snapshot:
+        snapshot[path] = path.read_bytes()
+    return snapshot[path]
+
+
+def with_source_snapshot(function):
+    @wraps(function)
+    def run(*args, **kwargs):
+        token = _source_snapshot.set({})
+        try:
+            return function(*args, **kwargs)
+        finally:
+            _source_snapshot.reset(token)
+    return run
+
+
 RELATION_SOURCES = {
     "DDL_FOREIGN_KEY", "ORM_RELATION", "RESULT_MAPPING", "SQL_JOIN",
     "SQL_COLUMN_COMPARISON", "CODE_INFERRED", "NAMING_CANDIDATE",
@@ -188,7 +216,7 @@ class Facts:
 
 def read_text(path: Path) -> str:
     try:
-        return path.read_text(encoding="utf-8", errors="replace")
+        return source_bytes(path).decode("utf-8", errors="replace")
     except OSError:
         return ""
 
@@ -1253,7 +1281,7 @@ def parse_liquibase(text: str, rel: str, facts: Facts, suffix: str) -> bool:
 
 
 def analyze_file(path: Path, root: Path) -> Fragment:
-    data = path.read_bytes(); text = data.decode("utf-8", errors="replace"); rel = path.relative_to(root).as_posix()
+    data = source_bytes(path); text = data.decode("utf-8", errors="replace"); rel = path.relative_to(root).as_posix()
     local = Facts(); suffix = path.suffix.lower(); lower_name = path.name.lower()
     try:
         if suffix == ".java": parse_java(text, rel, local)
@@ -2220,7 +2248,8 @@ def atomic_publish(output: Path, artifacts: dict[str, str], config: Path) -> tup
     output.mkdir(parents=True, exist_ok=True)
     warnings: list[str] = []; written: list[str] = []
     with tempfile.TemporaryDirectory(prefix="java-code-to-erd-", dir=output.parent) as temp_dir:
-        staging = Path(temp_dir)
+        staging = Path(temp_dir) / "next"
+        staging.mkdir()
         for name, content in artifacts.items():
             path = staging / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(content, encoding="utf-8")
         visual = "NOT_AVAILABLE"
@@ -2237,13 +2266,35 @@ def atomic_publish(output: Path, artifacts: dict[str, str], config: Path) -> tup
         if previous_manifest.exists():
             try: owned = json.loads(previous_manifest.read_text(encoding="utf-8"))["artifacts"]
             except (ValueError, KeyError): owned = []
-        for name in sorted(set(owned) - set(manifest_paths)):
+        # Staging alone does not protect an existing report if a later replace
+        # fails. Snapshot only files this publication can touch, then roll back
+        # partial updates on exceptions (including KeyboardInterrupt).
+        previous = Path(temp_dir) / "previous"
+        for name in sorted(set(owned) | set(manifest_paths)):
             target = output / name
-            if target.is_file(): target.unlink()
-        for source in sorted(staging.rglob("*")):
-            if not source.is_file(): continue
-            rel = source.relative_to(staging); target = output / rel; target.parent.mkdir(parents=True, exist_ok=True)
-            os.replace(source, target); written.append(target.as_posix())
+            if target.is_file():
+                backup = previous / name
+                backup.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(target, backup)
+        touched: list[str] = []
+        try:
+            for name in sorted(set(owned) - set(manifest_paths)):
+                target = output / name
+                if target.is_file():
+                    touched.append(name)
+                    target.unlink()
+            # The manifest is the commit marker, so publish it last.
+            for name in sorted(manifest_paths, key=lambda name: (name == "artifact-manifest.json", name)):
+                source = staging / name; target = output / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                touched.append(name)
+                os.replace(source, target); written.append(target.as_posix())
+        except BaseException:
+            for name in reversed(touched):
+                target = output / name; backup = previous / name
+                if backup.is_file(): os.replace(backup, target)
+                elif target.is_file(): target.unlink()
+            raise
     return sorted(written), warnings, visual
 
 
@@ -2284,6 +2335,7 @@ def load_incremental(state_path: Path, context_hash: str) -> dict[str, Any]:
     return {"schemaVersion": SCHEMA_VERSION, "ruleVersion": RULE_VERSION, "contextHash": context_hash, "files": {}}
 
 
+@with_source_snapshot
 def analyze_project(root: Path, output: Path | None = None, scope: str | None = None, include_tests: bool = False, language: str = "zh", save: bool = True, full_rescan: bool = False, config_path: Path | None = None, application: str | None = None, data_source: str | None = None, profile: str | None = None) -> tuple[dict[str, Any], list[str], list[str]]:
     root = root.resolve()
     if not root.is_dir(): raise ValueError(f"Project directory does not exist: {root}")
@@ -2293,34 +2345,45 @@ def analyze_project(root: Path, output: Path | None = None, scope: str | None = 
     reject_symlink_components(root, data_root)
     files, skipped = discover_files(root, include_tests)
     config_paths = [path for path in files if path.name in {"pom.xml", "build.gradle", "build.gradle.kts", "settings.gradle", "settings.gradle.kts"} or path.name.startswith("application")]
-    context_hash = sha256_bytes("".join(path.relative_to(root).as_posix() + ":" + sha256_bytes(path.read_bytes()) for path in config_paths).encode("utf-8"))
+    context_hash = sha256_bytes("".join(path.relative_to(root).as_posix() + ":" + sha256_bytes(source_bytes(path)) for path in config_paths).encode("utf-8"))
     state_path = data_root / "incremental-state.json"
     state = {"schemaVersion": SCHEMA_VERSION, "ruleVersion": RULE_VERSION, "contextHash": context_hash, "files": {}} if full_rescan or not save else load_incremental(state_path, context_hash)
     new_state = {"schemaVersion": SCHEMA_VERSION, "ruleVersion": RULE_VERSION, "contextHash": context_hash, "files": {}}
+    pending = 0
+    checkpoint_at = time.monotonic()
+
+    def checkpoint() -> None:
+        nonlocal pending, checkpoint_at
+        if save and pending and (pending >= CHECKPOINT_FILES or time.monotonic() - checkpoint_at >= CHECKPOINT_SECONDS):
+            # Retain not-yet-visited entries for recovery. Every reuse still
+            # requires a fresh content hash; only the final state prunes files.
+            progress = {**new_state, "files": {**state["files"], **new_state["files"]}}
+            atomic_write_text(state_path, canonical_json(progress))
+            pending = 0
+            checkpoint_at = time.monotonic()
+
     fragments = []
     for path in files:
         rel = path.relative_to(root).as_posix()
         try:
-            digest = sha256_bytes(path.read_bytes())
+            digest = sha256_bytes(source_bytes(path))
         except OSError as exc:
             ev = evidence(rel, 1, 1, "DISCOVERY")
             fragment = Fragment(rel, stable_id("unreadable", rel), [{"kind": "evidence", "value": ev}], [{"kind": "UNREADABLE_FILE", "message": str(exc), "evidenceIds": [ev["id"]]}]).json()
             new_state["files"][rel] = {"contentHash": fragment["contentHash"], "fragment": fragment}
             fragments.append(fragment)
-            if save: atomic_write_text(state_path, canonical_json(new_state))
+            pending += 1
+            checkpoint()
             continue
         cached = state["files"].get(rel)
         if cached and cached.get("contentHash") == digest:
             fragment = cached["fragment"]
         else:
             fragment = analyze_file(path, root).json()
+            pending += 1
         new_state["files"][rel] = {"contentHash": digest, "fragment": fragment}
         fragments.append(fragment)
-        if save:
-            # Each fragment is independently valid and content-addressed. Save
-            # progress so an interrupted large scan can resume without treating
-            # incomplete facts as a published model.
-            atomic_write_text(state_path, canonical_json(new_state))
+        checkpoint()
     tech = detect_technologies(files); dialects = detect_dialects(files); profiles = detect_profiles(files); effective_profiles = [profile] if profile else profiles; apps = detect_applications(root, files); data_sources = detect_data_sources(files)
     reviews = load_reviews(data_root) if data_root.exists() else {"schemaVersion": SCHEMA_VERSION, "reviews": []}
     if len(apps) == 1 and len(data_sources) > 1:

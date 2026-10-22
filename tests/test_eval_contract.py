@@ -53,7 +53,7 @@ class EvalContractTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
             queries = json.loads(output.read_text(encoding="utf-8"))
-            self.assertEqual(len(queries), 20)
+            self.assertEqual(len(queries), len(json.loads((ROOT / "evals/football_betting_assistant/trigger-evals.json").read_text())["queries"]))
             self.assertEqual(set(queries[0]), {"query", "should_trigger"})
 
 

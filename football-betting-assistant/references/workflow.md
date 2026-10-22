@@ -1,6 +1,6 @@
 # Workflow
 
-Follow this workflow before producing any football betting report.
+Follow this workflow before producing a full football betting report. Simple queries and local explanations stay in chat; refresh current facts only when needed. `doctor` and `route` are optional diagnostics, not mandatory preflight commands.
 
 ## Runtime Modes
 
@@ -178,3 +178,5 @@ Before answering:
 - For high-total or deep-handicap matches, check whether 5+ goal tail probability or goal-difference pressure should block narrow total-goals tickets and exact-score core tickets.
 - For group-stage final-round matches, check that qualification context uses potential knockout-stage opponents instead of assuming the next opponent is always a round-of-16 opponent.
 - Remove certainty, pressure, bankroll-allocation, personalized stake-size, and chase-loss language.
+
+When using `football_skill.py report`, linked prediction validation and risk audit run inside the command. Do not run the same checks again unless inputs change. The bundled fetch supports only Sporttery china-lottery; international odds require provided or separately authorized data, otherwise disclose the gap and use analysis-only without switching sources.

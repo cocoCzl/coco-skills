@@ -17,24 +17,19 @@ description: 用户请求足球竞彩/足球彩票、赛前分析、胜平负、
 
 ## 模型首先这样做
 
-优先使用统一入口：
+任务明确时直接调用 `scripts/football_skill.py` 的对应操作，无需先跑 `doctor` 或 `route`。只有意图不明才用 `route`，本地能力疑问或实际报错才用 `doctor`，参数不明再查 `--help`。完整接口见 [`references/agent-interface.md`](references/agent-interface.md)。实际操作仍做必要的数据和风险校验。
 
-```bash
-python3 <skill-dir>/scripts/football_skill.py doctor
-python3 <skill-dir>/scripts/football_skill.py route '<用户原始请求>'
-```
-
-随后按 `next_action` 调用 `fetch`、`report`、`audit`、`review` 或 `backtest`。完整接口见 [`references/agent-interface.md`](references/agent-interface.md)。统一入口只编排现有确定性工具，旧脚本继续兼容。
+简单查询、已有结果的局部解释可直接在聊天回答；只有涉及当前数据才核实时效与来源，不为术语解释抓全量快照、生成报告或落盘。完整赛前分析再执行下述流程。
 
 ## 请求状态机
 
 1. 分类为单场、组合、赛后复盘或历史回测。
-2. 中国竞彩默认 `china-lottery`；明确海外博彩公司才用 `international-odds`；无可验证赔率时使用 `analysis-only`。
-3. 当前/未来竞彩先检查本地快照，再自动 `fetch`。无法确认具体比赛时先做 Fixture Discovery；仍失败才索取最少比赛信息。
+2. 中国竞彩默认 `china-lottery`；明确海外博彩公司才用 `international-odds`；无可验证赔率时使用 `analysis-only`。内置 `fetch` 仅实现 `china-lottery / sporttery`，海外模式使用已有或授权外部来源数据；缺少可用适配器/赔率就明确限制并降级概率分析，不能静默改抓竞彩。
+3. 当前/未来竞彩先检查本地快照时效，仅在缺失、过期或用户要求刷新时 `fetch --mode china-lottery`。无法确认具体比赛时先做 Fixture Discovery；仍失败才索取最少比赛信息。
 4. 收集比赛身份、时间、地点、赔率/盘口、球队状态和赛事背景，并记录来源与观察时间。冲突不静默平均，按来源质量处理并降低 Data Confidence。
 5. 按顺序完成 **Probability Analysis → Value Judgment → Reference Purchase Plan**。没有真实赔率时停止在概率分析；缺少可售市场时不生成该市场购买项。
-6. 生成正式主单前运行 `audit`；阻断项必须保护、降级或移除。
-7. 完成赛前分析后生成单个自包含 HTML 和预测快照；聊天仅返回 2～4 行摘要及路径。
+6. 正式主单必须通过风险审计；`report` 已内置快照校验与 `audit`，相同输入不重复审计。输入或方案变化后重新检查；阻断项必须保护、降级或移除。
+7. 完成完整赛前分析后生成单个自包含 HTML 和预测快照；聊天仅返回 2～4 行摘要及路径。
 
 ## 按需加载
 

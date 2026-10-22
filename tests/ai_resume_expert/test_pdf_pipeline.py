@@ -388,9 +388,10 @@ class PdfPipelineTests(unittest.TestCase):
             with_source = self.successful_automatic_pdf_validation_at(root, source, source_path)
         self.assertTrue(with_source["automatic_qualified"])
         self.assertFalse(with_source["qualified"])
-        self.assertTrue(with_source["delivery_blocked"])
+        self.assertFalse(with_source["delivery_blocked"])
         self.assertTrue(with_source["visual_signoff_pending"])
         self.assertEqual(with_source["status"], "visual_signoff_pending")
+        self.assertEqual(with_source["visual_review"]["human_style_signoff"], "required_for_signed_qualification")
         self.assertTrue(with_source["qualification_scope"]["source_to_pdf_integrity_checked"])
 
     def test_recorded_visual_signoff_releases_only_the_bound_automatic_result(self) -> None:
@@ -556,8 +557,8 @@ class PdfPipelineTests(unittest.TestCase):
                 "qualified": False,
                 "visual_signoff_pending": True,
                 "status": "visual_signoff_pending",
-                "delivery_blocked": True,
-                "next_action": "Record explicit user visual signoff.",
+                "delivery_blocked": False,
+                "next_action": "Agent must inspect previews before delivery for user review.",
                 "artifacts": {"page_pngs": [], "grayscale_pngs": []},
             }
             captured = io.StringIO()
@@ -582,7 +583,7 @@ class PdfPipelineTests(unittest.TestCase):
             self.assertEqual(payload["status"], "visual_signoff_pending")
             self.assertTrue(payload["automatic_qualified"])
             self.assertFalse(payload["pdf_qualified"])
-            self.assertTrue(payload["delivery_blocked"])
+            self.assertFalse(payload["delivery_blocked"])
 
     def test_visual_page_break_override_matches_a_visible_block_without_changing_markdown(self) -> None:
         with tempfile.TemporaryDirectory(dir=TEST_TEMP_ROOT) as tmp:
@@ -863,7 +864,7 @@ class PdfPipelineTests(unittest.TestCase):
             self.assertEqual(payload["status"], "visual_signoff_pending")
             self.assertTrue(payload["automatic_qualified"])
             self.assertFalse(payload["pdf_qualified"])
-            self.assertTrue(payload["delivery_blocked"])
+            self.assertFalse(payload["delivery_blocked"])
             self.assertTrue(validation["automatic_qualified"])
             self.assertFalse(validation["qualified"])
             self.assertTrue(validation["visual_signoff_pending"])

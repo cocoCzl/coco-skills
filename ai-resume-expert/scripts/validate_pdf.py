@@ -99,7 +99,7 @@ def build_parser() -> JsonArgumentParser:
     )
     parser.add_argument(
         "--source-markdown",
-        help="UTF-8 Markdown file snapshot required for automatic source-to-PDF qualification; visual signoff remains required before delivery qualification.",
+        help="UTF-8 Markdown file snapshot required for automatic source-to-PDF qualification; user visual signoff remains required for signed qualification, while an Agent-checked PDF may be delivered for review.",
     )
     parser.add_argument("--name", help="Stable artifact basename; defaults to the PDF filename.")
     parser.add_argument("--pdftotext", help="Optional PATH-resolved pdftotext command name.")

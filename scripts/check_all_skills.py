@@ -33,6 +33,7 @@ IGNORED_DIRS = {
     "tests",
 }
 FRONTMATTER_KEY = re.compile(r"^([A-Za-z][A-Za-z0-9_-]*)\s*:\s*(.*)$")
+SKILL_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 README_SKILL_LINK = re.compile(r"\]\(\s*(?:\./)?(?P<target>[^)\s]+/SKILL\.md)\s*\)")
 MARKDOWN_LINK = re.compile(r"\]\((?P<target>[^)\s]+)(?:\s+\"[^\"]*\")?\)")
 LOCAL_ONLY_DIRECTORIES = {
@@ -108,6 +109,19 @@ def read_frontmatter(path: pathlib.Path) -> dict[str, str]:
         else:
             fields[key] = _yaml_scalar(value)
     return fields
+
+
+def metadata_errors(fields: dict[str, str]) -> list[str]:
+    """Public field constraints; packaging/eval budgets below are repo policy."""
+    errors = []
+    name = fields.get("name", "")
+    if not 1 <= len(name) <= 64 or not SKILL_NAME.fullmatch(name):
+        errors.append("name must be 1-64 lowercase letters/digits with single internal hyphens")
+    if not 1 <= len(fields.get("description", "")) <= 1024:
+        errors.append("description must contain 1-1024 characters")
+    if "compatibility" in fields and not 1 <= len(fields["compatibility"]) <= 500:
+        errors.append("compatibility must contain 1-500 characters when provided")
+    return errors
 
 
 def tracked_paths() -> list[str]:
@@ -287,6 +301,9 @@ def main() -> int:
                 failed = True
                 print("Invalid SKILL.md frontmatter: {0}".format(exc))
             else:
+                for error in metadata_errors(frontmatter):
+                    failed = True
+                    print("Metadata constraint: " + error)
                 if frontmatter.get("name") != skill.name:
                     failed = True
                     print(
@@ -304,9 +321,9 @@ def main() -> int:
             line_count = len((skill / "SKILL.md").read_text(encoding="utf-8").splitlines())
             if line_count > 500:
                 failed = True
-                print("SKILL.md exceeds 500 lines; move detailed material into references/.")
+                print("SKILL.md exceeds this repository's 500-line budget (public recommendation).")
             else:
-                print("SKILL.md stays within the progressive-disclosure budget.")
+                print("SKILL.md stays within the repository's line budget; runtime context not measured.")
             link_errors = check_markdown_links(skill)
             if link_errors:
                 failed = True
@@ -346,7 +363,7 @@ def main() -> int:
             for error in eval_errors:
                 print("- {0}".format(error))
         else:
-            print("Behavior and trigger evaluation sets are release-ready.")
+            print("Behavior and trigger evaluation JSON structure passed; Agent behavior was not run.")
 
         if not readme_registers_skill(root_readme, skill):
             failed = True

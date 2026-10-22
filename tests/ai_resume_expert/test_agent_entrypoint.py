@@ -39,6 +39,29 @@ class ResumeAgentEntrypointTests(unittest.TestCase):
         self.assertEqual(payload["error_code"], "MATERIAL_AUTHORIZATION_REQUIRED")
         self.assertEqual(payload["data"]["error"]["code"], "MATERIAL_AUTHORIZATION_REQUIRED")
 
+    def test_pdf_input_and_negated_export_do_not_override_diagnosis(self) -> None:
+        _, payload = self.run_entry("route", "请诊断这份 PDF 简历的问题，先不要导出新文件")
+        self.assertEqual(payload["data"]["mode"], "diagnosis")
+        self.assertEqual(payload["data"]["input_format_hint"], "pdf")
+        self.assertFalse(payload["data"]["export_requested_hint"])
+        self.assertNotIn("运行 render", payload["next_action"])
+
+    def test_target_roles_are_reused_and_export_requires_action(self) -> None:
+        for role in ("测试开发", "客户端开发"):
+            with self.subTest(role=role):
+                _, payload = self.run_entry("route", f"帮我优化{role}岗位简历")
+                self.assertEqual(payload["data"]["mode"], "optimization")
+                self.assertTrue(payload["data"]["target_role_present"])
+                self.assertNotIn("询问目标岗位", payload["next_action"])
+        _, exported = self.run_entry("route", "内容已确认，请导出 PDF")
+        self.assertEqual(exported["data"]["mode"], "pdf_delivery")
+
+    def test_explicit_agent_decision_preserves_prior_context(self) -> None:
+        _, payload = self.run_entry("route", "继续处理这一份 PDF", "--intent", "diagnosis", "--target-role", "测试开发")
+        self.assertTrue(payload["data"]["advisory_only"])
+        self.assertTrue(payload["data"]["target_role_present"])
+        self.assertEqual(payload["data"]["mode"], "diagnosis")
+
 
 if __name__ == "__main__":
     unittest.main()

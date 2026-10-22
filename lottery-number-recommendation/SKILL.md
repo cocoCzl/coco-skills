@@ -9,10 +9,9 @@ description: 为中国大乐透和双色球提供自动官方历史同步、号�
 
 ## 模型首先这样做
 
-`scripts/lottery_skill.py` 是唯一入口；先解析原始请求，避免模型自行拆参数：
+`scripts/lottery_skill.py` 是唯一入口。自然语言参数不清时用 `parse-request`；游戏、模式和数量已明确时可直接执行。`doctor` 仅在能力/缓存疑问或实际错误时用，不必每次运行：
 
 ```bash
-python3 <skill-dir>/scripts/lottery_skill.py doctor
 python3 <skill-dir>/scripts/lottery_skill.py parse-request '<用户原始请求>'
 ```
 
@@ -28,10 +27,9 @@ python3 <skill-dir>/scripts/lottery_skill.py parse-request '<用户原始请求>
 
 ## 数据门槛与性能
 
-推荐和回测前先同步。每日第一次全量复核以发现历史更正；当天后续请求合并必要新增页。运行数据、原始响应、不可变标准化快照和审计记录写入当前工作目录的 `data/lottery-number-recommendation/`。
+`recommend` 与 `backtest` 内部各自同步并校验；不要先手动 `sync` 再执行，避免重复请求。`sync` 仅用于单独更新/检查数据。每日第一次全量复核以发现历史更正；当天后续请求合并必要新增页。运行数据、原始响应、不可变标准化快照和审计记录写入当前工作目录的 `data/lottery-number-recommendation/`。
 
 ```bash
-python3 <skill-dir>/scripts/lottery_skill.py sync
 python3 <skill-dir>/scripts/lottery_skill.py recommend --game ssq --count 3 --mode hot --window 50 --strength strong --output text
 ```
 
@@ -61,3 +59,5 @@ python3 <skill-dir>/scripts/lottery_skill.py backtest dlt --window 200 --trials 
 报告覆盖期、截止期、数据版本、分区平均命中、各奖级命中和相对随机的区块自助法 95% 区间。只有区间下界大于零，才可称为该历史划分下的改善；不外推为未来优势。
 
 若中国福彩网未来自然公开从 `2003001` 起的连续双色球官方记录，全量同步可创建新数据版本并升级覆盖范围；不得用非官方补档提前宣称首期完整。
+
+成本：首次/每日全量复核请求约 `ceil(官方期数/100)` 页，每页间隔 0.2 秒；当日后续仍抓最新页，必要时追至上次最新期，保留历史更正复核。回测约为评估期数 × 4 策略 × 200 次抽样，另有区块自助计算；仅应用户要求执行，不为推荐附带回测。已验证不可变数据快照按版本复用，不减少覆盖、校验或默认试验标准。

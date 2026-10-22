@@ -21,6 +21,18 @@
     {"id":"no-trigger-07","query":"Football Manager 里这套阵容该用什么职责和训练强度？","should_trigger":false,"reason":"足球游戏策略。"},
     {"id":"no-trigger-08","query":"我想做一个 Poisson 分布教学示例，用足球进球演示公式。","should_trigger":false,"reason":"数学教学，不要求投注结论。"},
     {"id":"no-trigger-09","query":"审查这个赔率采集 Python 项目的重试和异常处理代码。","should_trigger":false,"reason":"代码审查，不执行足球投注工作流。"},
-    {"id":"no-trigger-10","query":"把这份球队名单翻译成中文并统一人名格式。","should_trigger":false,"reason":"翻译与格式整理。"}
+    {"id":"no-trigger-10","query":"把这份球队名单翻译成中文并统一人名格式。","should_trigger":false,"reason":"翻译与格式整理。"},
+    {
+      "id": "trigger-21",
+      "query": "解释刚才竞彩报告里让一球的 1:0 为什么判为让平，不用重做报告。",
+      "should_trigger": true,
+      "reason": "区分投注结果解释和普通战术讨论"
+    },
+    {
+      "id": "trigger-22",
+      "query": "解释足球教练如何通过一球领先后的阵型调整保护后防，不涉及赔率或投注。",
+      "should_trigger": false,
+      "reason": "区分投注结果解释和普通战术讨论"
+    }
   ]
 }

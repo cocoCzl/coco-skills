@@ -21,6 +21,7 @@ FIXTURE = ROOT / "tests" / "fixtures" / "java_code_to_erd" / "mixed-project"
 sys.path.insert(0, str(SKILL / "scripts"))
 
 from lib.core import analyze_project, validate_model  # noqa: E402
+from lib import core  # noqa: E402
 
 
 class JavaCodeToErdTests(unittest.TestCase):
@@ -163,6 +164,61 @@ class JavaCodeToErdTests(unittest.TestCase):
         self.assertNotIn("DDL_FOREIGN_KEY", model["relationships"][0]["sourceTypes"])
         self.assertFalse(any("V1__schema.sql" in e["file"] for e in model["evidence"]))
 
+    def test_checkpoint_resume_preserves_published_model_and_matches_full_scan(self) -> None:
+        model, _ = self.analyze()
+        published = self.project / "reports/java-code-to-erd/database-model.json"
+        before = published.read_bytes()
+        source = self.project / "src/main/java/extra"
+        source.mkdir(parents=True)
+        for index in range(70):
+            (source / f"Extra{index:03d}.java").write_text(f"class Extra{index} {{}}")
+        original = core.analyze_file
+        parsed = 0
+
+        def interrupt(path, root):
+            nonlocal parsed
+            parsed += 1
+            if parsed == 66:
+                raise KeyboardInterrupt()
+            return original(path, root)
+
+        with patch.object(core, "analyze_file", side_effect=interrupt):
+            with self.assertRaises(KeyboardInterrupt):
+                analyze_project(self.project)
+        self.assertEqual(before, published.read_bytes())
+        state_path = next((self.project / "data").rglob("incremental-state.json"))
+        state = json.loads(state_path.read_text())
+        # The checkpoint still includes valid pre-existing files, even if the
+        # interrupted traversal had not reached them yet.
+        self.assertTrue({e["file"] for e in model["evidence"]}.issubset(state["files"]))
+        with patch.object(core, "analyze_file", wraps=original) as resumed:
+            recovered, _, _ = analyze_project(self.project)
+        self.assertLessEqual(resumed.call_count, 6)
+        complete, _, _ = analyze_project(self.project, full_rescan=True)
+        self.assertEqual(recovered, complete)
+
+    def test_source_snapshot_is_released_and_one_file_change_matches_full_scan(self) -> None:
+        original = Path.read_bytes
+        reads = {}
+
+        def read(path):
+            if path.is_relative_to(self.project.resolve()) and "src" in path.parts:
+                reads[path] = reads.get(path, 0) + 1
+            return original(path)
+
+        with patch.object(Path, "read_bytes", read):
+            analyze_project(self.project)
+        self.assertTrue(reads)
+        self.assertTrue(all(count == 1 for count in reads.values()), reads)
+        sql = self.project / "src/main/resources/db/migration/V1__schema.sql"
+        sql.write_text(sql.read_text() + "\nCREATE TABLE new_fact (id BIGINT PRIMARY KEY);\n")
+        with patch.object(core, "analyze_file", wraps=core.analyze_file) as parsed:
+            changed, _, _ = analyze_project(self.project)
+        self.assertEqual(parsed.call_count, 1)
+        full, _, _ = analyze_project(self.project, full_rescan=True)
+        self.assertEqual(changed, full)
+        self.assertIn("new_fact", {item["name"] for item in changed["databaseObjects"]})
+
     def test_incremental_context_change_matches_full_rescan(self) -> None:
         self.analyze()
         pom = self.project / "pom.xml"
@@ -182,6 +238,30 @@ class JavaCodeToErdTests(unittest.TestCase):
         result = self.run_cli("analyze", "--project", str(self.project), "--output", str(invalid_output), expect=1)
         self.assertEqual("FAILED", result["data_status"])
         self.assertEqual(before, output.joinpath("database-model.json").read_bytes())
+
+    def test_partial_publication_failure_restores_previous_report_bundle(self) -> None:
+        _, output = self.analyze()
+        before = {p.relative_to(output): p.read_bytes() for p in output.rglob("*") if p.is_file()}
+        sql = self.project / "src/main/resources/db/migration/V1__schema.sql"
+        sql.write_text(sql.read_text() + "\nCREATE TABLE new_fact (id BIGINT PRIMARY KEY);\n")
+        original = core.os.replace
+
+        def fail_late(source, target):
+            # Fail after the updated model/report were installed, but allow
+            # restoration from the previous snapshot.
+            if "next" in Path(source).parts and Path(target).name == "database.dbml":
+                raise OSError("simulated late publication failure")
+            return original(source, target)
+
+        with patch.object(core.os, "replace", side_effect=fail_late):
+            with self.assertRaisesRegex(OSError, "late publication"):
+                analyze_project(self.project)
+        after = {p.relative_to(output): p.read_bytes() for p in output.rglob("*") if p.is_file()}
+        self.assertEqual(before, after)
+        recovered, _, _ = analyze_project(self.project)
+        full, _, _ = analyze_project(self.project, full_rescan=True)
+        self.assertEqual(recovered, full)
+        self.assertIn("new_fact", {obj["name"] for obj in recovered["databaseObjects"]})
 
     def test_query_without_save_creates_no_report_or_state(self) -> None:
         result = self.run_cli("query", "--project", str(self.project), "--object", "app_user")

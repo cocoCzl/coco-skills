@@ -19,10 +19,9 @@ Reconstruct the database model expressed by a Java repository. The result descri
 
 Read [references/workflow.md](references/workflow.md), [references/data-model.md](references/data-model.md), and [references/confidence-and-conflicts.md](references/confidence-and-conflicts.md) for every analysis.
 
-1. Run `doctor`, then `analyze` through the compatibility launcher. It selects an already-installed Python 3.10+ and never installs one:
+1. Run `analyze` directly through the compatibility launcher; use `doctor` only for capability questions or actual environment errors. It selects an already-installed Python 3.10+ and never installs one:
 
    ```bash
-   python3 <skill-dir>/scripts/launch.py doctor --project <project-root>
    python3 <skill-dir>/scripts/launch.py analyze --project <project-root>
    ```
 
@@ -41,3 +40,5 @@ Read [references/workflow.md](references/workflow.md), [references/data-model.md
 - Human review: `review --action confirm|exclude --from-table ... --from-column ... --to-table ... --to-column ...`.
 
 Detailed Java/JPA, MyBatis, JDBC, SQL, and migration rules live under [references/rules/](references/rules/) and are loaded only when routed by detected technology.
+
+Full discovery remains repository-wide even with `--scope`. Each run re-hashes source bytes, reuses unchanged fragments, and shares one in-memory byte snapshot across parsing and inference. Cache progress is atomically checkpointed after 64 changed files or 2 seconds while processing, then saved in full at successful completion. Interruption may require reprocessing the last batch; cached facts are always hash-checked before reuse. No raw source is persisted in the cache.

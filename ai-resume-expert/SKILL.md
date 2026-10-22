@@ -19,25 +19,21 @@ description: 面向中国大陆技术岗位的证据优先简历专家。用户�
 
 ## 模型首先这样做
 
-优先用统一入口减少脚本选择和状态误判；先运行 `--help`：
+使用 `scripts/resume_skill.py` 执行提取、扫描、校验或渲染；任务明确时直接调用对应操作。`route` 仅是无上下文的启发式建议，不能覆盖用户意图、否定表达或已有会话事实；输入 PDF 不表示要求导出。复杂/混合请求由 Agent 判断，必要时用 `route --intent <mode> --target-role <已有岗位>` 传入确定结果。
 
-```bash
-python3 <skill-dir>/scripts/resume_skill.py --help
-python3 <skill-dir>/scripts/resume_skill.py doctor
-python3 <skill-dir>/scripts/resume_skill.py route '<用户原始请求>'
-```
-
-统一结果的 `status=blocked` 时先执行 `next_action`，不要绕过。完整命令和状态契约见 [`references/agent-interface.md`](references/agent-interface.md)。底层旧脚本保持兼容，仅在调试或统一入口未覆盖的高级操作中直接使用。
+不必每次运行 `--help`、`doctor` 或 `route`；仅在接口不清、环境变化或实际报错时使用。操作本身的参数、格式、授权和事实校验不可省略。完整命令和状态契约见 [`references/agent-interface.md`](references/agent-interface.md)。`blocked` 时处理实际阻断项，不能绕过校验。
 
 ## 请求状态机
 
-1. **锁定目标岗位**：若用户尚未给出一个明确岗位，只自然询问这一件事，不生成初稿。多个不同岗位建议分别建版本并询问本次先做哪一个；真实交叉岗位可合并共同主线。
+1. **锁定目标岗位**：复用本轮和此前会话中的目标岗位；仅确实缺失时询问，不生成初稿。通用诊断可先进行，不被岗位缺失阻断。多个不同岗位建议分别建版本并询问本次先做哪一个；真实交叉岗位可合并共同主线。
 2. **识别模式**：直接生成、代码/文档辅助、原简历诊断、原简历优化或混合模式；无 JD 是岗位基准版，有 JD 才是 JD 定制版。
 3. **确认材料边界**：用户已上传并要求处理的单份材料可视为本次授权；尚未共享的本地文件、代码或 Git 分别解释范围并确认。
 4. **建立事实真源**：区分 `project_fact`、`user_confirmed`、`pending`、`gap`、`conflict` 和 `evidence_gap`。需要 JSON 时按 [`schemas/README.md`](schemas/README.md) 读取对应 Schema。
-5. **自适应访谈**：每轮只问当前最影响质量的一个问题，并引用已有上下文。可给 2～4 个候选方向，但声明可能都不是；用户要求快速填写时才给一次性问卷。
+5. **自适应访谈**：复用已提供事实和授权，按缺口优先级一次收集少量相关关键问题；独立阻断项可单问，不机械限制每轮一问。候选方向不是事实，用户可以全部否定；证据足够即停止访谈。
 6. **达到门槛后生成**：未达到最低证据门槛，只交付素材、缺口或结构骨架；不要用占位符伪装初稿。
 7. **自审与交付**：验证事实、归属、JD 证据、STAR、敏感信息、篇幅和面试可辩护性，再声明准确的版本与交付状态。
+
+普通聊天诊断或 Markdown 生成可用简短文字记录事实来源与自审，无需为走流程创建 JSON 包、职业库或读取 Schema。需要结构化交接、确定性包校验或 PDF 时才创建并校验 resume-package；已有包直接复用。
 
 需要按场景选择资料时先读 [`references/index.md`](references/index.md)，只加载当前岗位、模式和阶段所需文件，不要一次加载全部 references。
 
@@ -61,13 +57,13 @@ python3 <skill-dir>/scripts/resume_skill.py route '<用户原始请求>'
 
 - 只请求诊断时按致命/重大/一般列出位置、依据、影响和方向，到此为止；文本提取不能冒充视觉排版检查。
 - 优化时保留原稿，事实确认后提供独立稿和关键修改对照。
-- 首次交付必须声明版本、内容状态、阻断项和下一步唯一确认事项。初稿不是投递就绪。
+- 首次交付必须声明版本、内容状态、阻断项；有实际缺口才列下一步，不为完成流程额外索取签收。初稿不是投递就绪。
 - 正式归档前取得一次明确授权；随后用不可覆盖的 `reports/ai-resume-expert/draft-###/`，不保存原始私有材料或聊天问答。
 - 没有用户明确确认 Markdown 时，不生成最终 PDF。确认后固定使用 Markdown → 独立 HTML → PDF，并绑定确认稿哈希。
-- PDF 必须经过自动校验和页面图像视觉检查；自动通过仍是 `visual_signoff_pending`，只有用户视觉签收后才可标为投递就绪。
-- macOS 上使用 LibreOffice 且当前 Agent 有命令沙箱时，必须让整个 `resume_skill.py render` 命令请求沙箱外执行；只放行它内部调用的 `soffice` 无法让已经受限的父进程脱离沙箱。批准范围应精确到该脚本的 `render` 子命令，不要关闭整个 Codex 沙箱。
+- PDF 必须经过自动校验和 Agent 对所有页面图像的视觉检查后才交付。`visual_signoff_pending` 仅表示用户尚未签收，可交付供审阅；分别说明内容确认、自动校验、Agent 视觉检查和用户审阅状态，不冒称用户已审阅。保留可选的哈希绑定用户签收记录和 `qualified` 状态，不以额外签收阻断诊断、Markdown 或合格的待审阅 PDF。
 
-相关统一命令：
+
+PDF 导出时读取 [`references/pdf-delivery.md`](references/pdf-delivery.md)。相关统一命令：
 
 ```bash
 python3 <skill-dir>/scripts/resume_skill.py extract resume.docx --authorized
@@ -76,4 +72,6 @@ python3 <skill-dir>/scripts/resume_skill.py validate resume-package.json
 python3 <skill-dir>/scripts/resume_skill.py render confirmed-resume.md --confirmed --package resume-package.json
 ```
 
-PDF 渲染器和验收依赖缺失、沙箱外执行未获批准或渲染失败时，交付 Markdown 与可打印 HTML并明确降级；不要把未验证 PDF 称为合格。归档、职业证据库、高级 PDF 操作和完整质量门槛按 references 与底层 `--help` 执行。
+PDF 渲染器和验收依赖缺失或渲染失败时，交付 Markdown 与可打印 HTML并明确降级；不要把未验证 PDF 称为合格。归档、职业证据库、高级 PDF 操作和完整质量门槛按 references 与底层 `--help` 执行。
+
+仅在 PDF 依赖、字体、LibreOffice 或权限实际报错时读取 [`references/pdf-troubleshooting.md`](references/pdf-troubleshooting.md)，按当前环境处理。

@@ -17,6 +17,8 @@ For tournament group-stage matches, standings and played results are a separate 
 
 **china-lottery** is the default for 中国体育彩票 / 竞彩 requests. Purchase plans may use only China Sports Lottery buyable markets from `sporttery` snapshots or user-provided China lottery data. Third-party bookmaker odds may be shown as international market reference, but they must not replace China lottery odds in a China lottery purchase plan.
 
+The bundled `football_skill.py fetch` does not implement an international adapter. A configured key alone does not enable it; use separately authorized tooling or supplied data, otherwise disclose the limitation. Never substitute Sporttery silently.
+
 **international-odds** is used only when the user explicitly asks for overseas bookmaker / international odds analysis or configures that mode. It may use The Odds API or a user-authorized bookmaker/aggregator provider.
 
 **analysis-only** is used when fixture and football context are available but verifiable odds, lines, or buyable markets are missing. It can produce Probability Analysis, but not Value Judgment or Reference Purchase Plans.

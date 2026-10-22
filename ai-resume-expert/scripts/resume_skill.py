@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -43,29 +44,47 @@ def envelope(command: str, started: float, *, status: str, data_status: str, nex
     return result
 
 
-def route_request(text: str) -> dict[str, Any]:
+def route_request(text: str, *, intent: str | None = None, target_role: str | None = None) -> dict[str, Any]:
+    """Offer a bounded hint, not a semantic parser or an authorization decision.
+
+    The agent resolves negation, mixed requests and prior conversation. Explicit
+    parameters carry that decision without asking this heuristic to rediscover it.
+    """
     lowered = text.lower()
-    if any(word in lowered for word in ("pdf", "导出", "渲染")):
-        mode = "pdf_delivery"
-        next_action = "确认 Markdown 和 resume-package 后运行 render。"
-    elif any(word in lowered for word in ("诊断", "问题", "审查")):
+    clauses = re.split(r"[，。；,;\n]", lowered)
+    export_requested = any(
+        any(word in clause for word in ("导出", "渲染", "生成pdf", "生成 pdf"))
+        and not re.search(r"不|别|无需|禁止", clause)
+        for clause in clauses
+    )
+    if any(word in lowered for word in ("诊断", "问题", "审查")):
         mode = "diagnosis"
-        next_action = "确认目标岗位；对已提供简历运行 extract 后进行文本诊断。"
     elif any(word in lowered for word in ("优化", "润色", "改写")):
         mode = "optimization"
-        next_action = "确认目标岗位并提取原简历，先核实事实再改写。"
     elif any(word in lowered for word in ("代码库", "仓库", "repository", "repo")):
         mode = "repository_evidence"
-        next_action = "说明数据边界并取得指定范围授权后运行 scan。"
+    elif export_requested:
+        mode = "pdf_delivery"
     else:
         mode = "generation"
-        next_action = "先确认一个明确的目标岗位。"
-    target_markers = ("后端", "前端", "全栈", "android", "ios", "sre", "devops", "数据工程", "算法", "机器学习", "ai", "大模型", "架构师", "技术负责人")
-    target_present = any(marker in lowered for marker in target_markers)
-    if not target_present and mode != "pdf_delivery":
-        next_action = "只询问本次简历最想投递的一个目标岗位。"
+    mode = intent or mode
+    target_markers = ("后端", "前端", "全栈", "客户端", "移动端", "测试开发", "android", "ios", "sre", "devops", "数据工程", "算法", "机器学习", "大模型", "架构师", "技术负责人")
+    target_present = bool(target_role) or any(marker in lowered for marker in target_markers) or bool(re.search(r"\bai\b", lowered))
+    actions = {
+        "diagnosis": "对已授权简历按需 extract 并诊断；输入 PDF 不表示要求导出。岗位缺失时可先诊断通用问题。",
+        "optimization": "复用已有目标岗位、事实和授权；必要时 extract，仅补齐事实缺口后改写。",
+        "repository_evidence": "复用已有范围授权；尚未授权时说明边界，再运行 scan。",
+        "pdf_delivery": "复用已确认的 Markdown 和 resume-package，运行 render；未确认内容时先补齐确认。",
+        "generation": "复用已有事实，达到最低证据门槛后生成。",
+    }
+    next_action = actions[mode]
+    if not target_present and mode in {"generation", "optimization"}:
+        next_action = "先检查会话中已有的目标岗位；确实缺失时询问目标岗位。"
     return {
         "mode": mode,
+        "advisory_only": True,
+        "input_format_hint": "pdf" if "pdf" in lowered else None,
+        "export_requested_hint": export_requested,
         "target_role_present": target_present,
         "reference_index": "references/index.md",
         "next_action": next_action,
@@ -112,6 +131,8 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser("doctor", help="Inspect bundled and optional capabilities without reading user material.")
     route = commands.add_parser("route", help="Classify a natural-language request and return the safest next action.")
     route.add_argument("text")
+    route.add_argument("--intent", choices=("diagnosis", "optimization", "repository_evidence", "pdf_delivery", "generation"))
+    route.add_argument("--target-role", help="Target already known from conversation; do not re-ask it.")
     extract = commands.add_parser("extract", help="Delegate authorized resume extraction.")
     extract.add_argument("input")
     extract.add_argument("--authorized", action="store_true")
@@ -142,7 +163,7 @@ def main() -> int:
         print(json.dumps(output, ensure_ascii=False, indent=2))
         return 0 if status == "ready" else 2
     if args.command == "route":
-        data = route_request(args.text)
+        data = route_request(args.text, intent=args.intent, target_role=args.target_role)
         output = envelope("route", started, status="ready", data_status="request_classified", next_action=data["next_action"], data=data)
         print(json.dumps(output, ensure_ascii=False, indent=2))
         return 0

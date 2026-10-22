@@ -70,6 +70,17 @@
       "expected_output": "不安装或联网，交付 Mermaid 源、模型、DBML 和报告并说明视觉检查状态。",
       "files": ["tests/fixtures/java_code_to_erd/mixed-project"],
       "expectations": ["不执行安装命令", "保留语法稳定的 .mmd", "visualStatus 标记为 SOURCE_ONLY"]
+    },
+    {
+      "id": 11,
+      "prompt": "分析这个 Java 项目。上次分析中断，data 下有增量检查点且 reports 有旧的有效模型；当前没有 Mermaid 渲染器。",
+      "expected_output": "全仓发现，校验哈希后复用片段，生成事实与未渲染图。",
+      "expectations": [
+        "不把 scope 缩小来规避全仓关系发现",
+        "恢复后模型与完整扫描等价，不把进度缓存当已发布模型",
+        "不安装渲染器，说明 SVG 未验证并保留可用 mmd"
+      ],
+      "files": []
     }
   ]
 }

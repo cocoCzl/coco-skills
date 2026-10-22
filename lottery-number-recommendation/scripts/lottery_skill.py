@@ -354,7 +354,9 @@ def sync_official_history(data_dir: Path, game: str, fetch=None, sleep=None, now
         "missing_sequences": [],
     }
     write_json(archive_path(data_dir, game), archive)
-    return status_for_game(data_dir, game)
+    # The validated archive is already in memory. Recommendation/backtest will
+    # independently load the persisted archive through their readiness gate.
+    return archive_status(game, archive)
 
 
 def record_sync_failure(data_dir: Path, game: str, error: str) -> None:
@@ -448,6 +450,11 @@ def status_for_game(data_dir: Path, game: str) -> dict[str, Any]:
     if not path.exists():
         return {"game": game, "label": GAMES[game]["label"], "ready": False, "reason": "尚未同步官方历史数据"}
     archive = read_json(path)
+    return archive_status(game, archive)
+
+
+def archive_status(game: str, archive: dict[str, Any]) -> dict[str, Any]:
+    """Describe the same validated archive without a redundant disk reload."""
     draws = archive.get("draws", [])
     continuous, missing = check_continuity(draws) if isinstance(draws, list) else (False, [])
     complete = bool(continuous and archive.get("complete"))

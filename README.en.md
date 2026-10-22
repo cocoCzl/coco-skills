@@ -66,6 +66,8 @@ evals/                      # Behavioral evaluation cases
 
 See [QUALITY_STANDARD.md](QUALITY_STANDARD.md) for quality requirements and [CONTRIBUTING.md](CONTRIBUTING.md) for contribution guidance.
 
+Structural checks, script tests, and actual Agent evaluations are reported separately. Valid evaluation JSON does not demonstrate task success. Clear requests go straight to the operation; diagnostics and references are loaded when needed. See [evaluation instructions](evals/README.md).
+
 ## License
 
 [MIT](LICENSE)

@@ -43,16 +43,12 @@ def route_request(text: str) -> dict[str, Any]:
     lowered = text.lower()
     if any(word in lowered for word in ("复盘", "昨天买", "赛后")):
         mode = "post_match_review"
-        next_action = "优先扫描已保存预测；核实赛果后运行 review。"
     elif any(word in lowered for word in ("回测", "校准", "命中率", "历史预测")):
         mode = "backtest"
-        next_action = "取得只含赛前信息且附真实赛果的样本 JSON 后运行 backtest。"
     elif any(word in lowered for word in ("串关", "四串一", "组合", "多场")):
         mode = "portfolio"
-        next_action = "确认完整赛程、可购买市场和赔率；再生成组合报告。"
     else:
         mode = "single_match"
-        next_action = "确认比赛身份、开赛时间、球队背景和当前可购买赔率。"
     if any(word in lowered for word in ("博彩公司", "bookmaker", "the odds api", "海外赔率", "international odds")):
         runtime_mode = "international-odds"
     elif any(word in lowered for word in ("竞彩", "体育彩票", "让球胜平负", "总进球")):
@@ -61,13 +57,24 @@ def route_request(text: str) -> dict[str, Any]:
         runtime_mode = "analysis-only"
     has_fixture = any(sep in text for sep in (" vs ", " VS ", "对阵", "对")) or "比赛" in text
     asks_value = any(word in lowered for word in ("价值", "购买", "买", "赔率", "串"))
+    if mode == "backtest":
+        next_action = "使用已有赛前样本和真实赛果运行 backtest <samples.json>；缺少样本时仅补齐样本。"
+    elif mode == "post_match_review":
+        next_action = "运行 review 扫描已有预测并核实赛果；已有结果文件可传 --results-input。"
+    elif runtime_mode == "international-odds":
+        next_action = "fetch 不支持海外赔率；使用用户已提供或授权来源的赔率及观察时间继续分析，缺赔率时降级 analysis-only。不要改抓中国竞彩。"
+    elif runtime_mode == "analysis-only":
+        next_action = "依据已验证的比赛和球队资料做概率分析；无赔率时不做价值判断。缺少比赛身份时先确认具体比赛。"
+    else:
+        next_action = "先检查快照时效，必要时运行 fetch --mode china-lottery；无法确认比赛时发现赛程后再询问最少信息。"
     return {
         "mode": mode,
         "runtime_mode": runtime_mode,
+        "fetch_supported": runtime_mode == "china-lottery",
         "fixture_present": has_fixture,
         "value_or_ticket_requested": asks_value,
         "stages": ["probability_analysis", "value_judgment", "reference_purchase_plan"],
-        "next_action": next_action if has_fixture else "先发现或确认具体比赛，不从记忆虚构赛程。",
+        "next_action": next_action,
     }
 
 
@@ -123,6 +130,7 @@ def build_parser() -> argparse.ArgumentParser:
     route = commands.add_parser("route", help="Classify a natural-language football request.")
     route.add_argument("text")
     fetch = commands.add_parser("fetch", help="Fetch or parse a normalized China Sports Lottery snapshot.")
+    fetch.add_argument("--mode", choices=("china-lottery", "international-odds", "analysis-only"), default="china-lottery")
     fetch.add_argument("--raw-input")
     fetch.add_argument("--out", default="data/football/snapshots")
     report = commands.add_parser("report", help="Build an HTML report and linked prediction snapshot.")
@@ -166,6 +174,12 @@ def main() -> int:
         return 0
 
     if args.command == "fetch":
+        if args.mode != "china-lottery":
+            output = result("fetch", started, status="degraded", data_status="unsupported_source",
+                            next_action="fetch 仅支持 china-lottery / sporttery。使用已提供或授权的来源数据；缺少赔率时只做 analysis-only 概率分析，不切换来源。",
+                            data={"requested_mode": args.mode, "supported_modes": ["china-lottery"]}, error_code="SOURCE_MODE_UNSUPPORTED")
+            print(json.dumps(output, ensure_ascii=False, indent=2))
+            return 3
         script, child = "fetch_match_data.py", ["--mode", "china-lottery", "--provider", "sporttery", "--football", "--out", args.out]
         if args.raw_input:
             child += ["--raw-input", args.raw_input]

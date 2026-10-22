@@ -84,6 +84,28 @@
       "prompt": "北京时间明天的第三轮小组赛你怎么看？如果有6场、8场或者更多场一起开，帮我给胜平负、让球胜平负、大小球和比分建议。",
       "expected_output": "The assistant should perform Fixture Discovery and verify the complete Beijing-time slate instead of assuming four matches. It must analyze every confirmed match individually, including group/final-round context, result lean, handicap lean, over-under or total-goals lean, score candidates, grade, and risk. It should then generate one self-contained HTML Report under reports/football-betting-assistant and reply only with a concise summary plus the HTML path. The report should select ticket plans by market-family limits: model-best main ticket with fewer than or up to 8 buyable direction legs depending on confidence, 让球/胜平负方向单 up to 8 legs, 大小球/总进球单 up to 8 legs, and a 比分4串1 using only the four strongest score-concentration matches. It must include 备选/替换 and 可选小组合 such as 2串1/3串1/4串1, must not force 4/6/8 legs, must not recommend a 6-match or 8-match exact-score ticket, and does not create a Markdown report.",
       "expectations": ["发现并核验北京时间完整比赛列表而非假定四场", "逐场分析所有确认比赛并包含末轮背景", "方向票最多八场且比分票最多四场", "不强迫固定腿数并提供替换和小组合", "生成单个 HTML 而非 Markdown"]
+    },
+    {
+      "id": 15,
+      "prompt": "请用海外博彩公司赔率分析 A vs B，当前没有任何配置的 API 适配器，也没有我提供的赔率。别用中国竞彩替代。",
+      "expected_output": "明确 fetch 不支持海外来源；缺赔率时保留概率分析或索取最少材料。",
+      "expectations": [
+        "不静默运行默认 Sporttery fetch",
+        "说明来源限制及可执行的提供赔率/授权来源下一步",
+        "不把没有赔率的结果称为价值判断或可购买建议"
+      ],
+      "files": []
+    },
+    {
+      "id": 16,
+      "prompt": "刚才报告里主队让一球，为什么 1:0 是让平？只解释这一项，不要重新抓数据或生成报告。",
+      "expected_output": "直接解释主队进球加让球数减客队进球。",
+      "expectations": [
+        "说明 1 + (-1) - 0 = 0 对应让平",
+        "不调用 fetch、report、doctor 或重复 audit",
+        "不新增快照和报告"
+      ],
+      "files": []
     }
   ]
 }

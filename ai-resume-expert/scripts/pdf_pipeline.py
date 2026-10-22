@@ -452,7 +452,8 @@ def _automatic_report_pending_invariant(report: Any) -> bool:
         and report.get("automatic_qualified") is True
         and report.get("status") == "visual_signoff_pending"
         and report.get("qualified") is False
-        and report.get("delivery_blocked") is True
+        # Accept prior reports that blocked delivery pending user signoff too.
+        and isinstance(report.get("delivery_blocked"), bool)
         and report.get("visual_signoff_pending") is True
         and isinstance(scope, dict)
         and scope.get("automatic_checks_passed") is True
@@ -663,7 +664,7 @@ def evaluate_pdf_visual_signoff(automatic_report: Dict[str, Any], signoff_path: 
             "errors": [
                 _issue(
                     "CURRENT_AUTOMATIC_VALIDATION_REPORT_NOT_SIGNABLE",
-                    "Current automatic validation metadata is not an unsigned, delivery-blocked visual-signoff-pending result.",
+                    "Current automatic validation metadata is not an unsigned visual-signoff-pending result.",
                 )
             ],
         }
@@ -674,7 +675,7 @@ def evaluate_pdf_visual_signoff(automatic_report: Dict[str, Any], signoff_path: 
             "status": "pending",
             "valid": False,
             "errors": [],
-            "next_action": "Open every retained color and grayscale preview, obtain explicit user confirmation, then record a hash-bound visual signoff.",
+            "next_action": "Agent: inspect every retained color and grayscale preview before delivering the PDF for review. User visual signoff remains pending; record it only if explicitly requested or supplied, and do not claim user review is complete.",
         }
 
     signoff, errors = _signoff_payload(signoff_path)
@@ -761,6 +762,7 @@ def apply_pdf_visual_signoff(automatic_report: Dict[str, Any], signoff_path: Opt
             {
                 "ok": True,
                 "status": "visual_signoff_pending",
+                "delivery_blocked": False,
                 "next_action": state["next_action"],
             }
         )
@@ -1481,10 +1483,10 @@ def validate_pdf_artifact(
         "visual_review": {
             "rasterized": bool(page_pngs) and bool(gray_pngs),
             "automatic_heuristics_passed": not image_failures and bool(image_stats),
-            "human_style_signoff": "required_before_delivery",
+            "human_style_signoff": "required_for_signed_qualification",
         },
         "next_action": (
-            "Review the rendered page PNGs and record explicit user visual signoff before delivering the PDF."
+            "Agent: inspect every color and grayscale page before delivering for review; record user visual signoff only after explicit user confirmation."
             if automatic_qualified
             else (
                 "Automatic PDF checks passed, but no source Markdown was supplied. Rerun with --source-markdown before calling this PDF qualified or delivery-ready."

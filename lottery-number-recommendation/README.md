@@ -16,3 +16,5 @@ python3 lottery-number-recommendation/scripts/lottery_skill.py parse-request '�
 默认在对话中返回结果；用户要求保存时写入 `reports/lottery-number-recommendation/`。官方历史和审计数据保存在当前工作目录的 `data/lottery-number-recommendation/`。
 
 完整的 Agent 执行规则见 [SKILL.md](SKILL.md)，官方来源与访问边界见 [references/official-sources.md](references/official-sources.md)，对话示例见 [examples](../examples/lottery_number_recommendation/README.md)。
+
+推荐/回测内部已同步，不必提前再跑 `sync`；`doctor` 按需。首次及每日全量复核约需每 100 期一页请求，当日后续检查最新页并按需补页。回测成本约为期数 × 四策略 × 每期 200 次抽样及区块自助计算，仅在用户要求时执行。覆盖、历史更正检查与回测标准不变。

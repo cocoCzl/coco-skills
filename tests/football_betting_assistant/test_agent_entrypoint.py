@@ -83,6 +83,30 @@ class FootballAgentEntrypointTests(unittest.TestCase):
         self.assertEqual(payload["status"], "blocked")
         self.assertEqual(payload["error_code"], "RISK_AUDIT_BLOCKED")
 
+    def test_unsupported_fetch_never_silently_uses_sporttery(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            out = Path(tmp) / "snapshots"
+            for mode in ("international-odds", "analysis-only"):
+                result, payload = self.run_entry("fetch", "--mode", mode, "--out", str(out), "--raw-input", "missing.json")
+                self.assertEqual(result.returncode, 3)
+                self.assertEqual(payload["error_code"], "SOURCE_MODE_UNSUPPORTED")
+                self.assertEqual(payload["data"]["requested_mode"], mode)
+                self.assertEqual(payload["artifacts"], [])
+                self.assertFalse(out.exists())
+
+    def test_each_route_has_an_executable_or_explicit_degraded_next_step(self) -> None:
+        for prompt, expected, supported in (
+            ("中国竞彩查赔率", "fetch --mode china-lottery", True),
+            ("用 The Odds API 查海外赔率", "fetch 不支持海外赔率", False),
+            ("解释 A vs B 的概率分析", "无赔率时不做价值判断", False),
+            ("我有赛前预测 JSON，回测校准", "backtest <samples.json>", False),
+            ("复盘昨天的主单", "运行 review", False),
+        ):
+            with self.subTest(prompt=prompt):
+                _, payload = self.run_entry("route", prompt)
+                self.assertIn(expected, payload["next_action"])
+                self.assertEqual(payload["data"]["fetch_supported"], supported)
+
 
 if __name__ == "__main__":
     unittest.main()
