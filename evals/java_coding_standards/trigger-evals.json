@@ -144,6 +144,54 @@
       "query": "从现有 Java接口提取技术栈事实用于简历，不评审也不重构。",
       "should_trigger": false,
       "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "context-positive-cancel",
+      "query": "项目/会话上下文：当前项目 pom.xml 设置 release=17，目标 src/main/java/shop/OrderController.java 与 OrderService.java；沿用现有控制器路由和取消状态约束。\n用户请求：给订单增加一个取消接口。",
+      "should_trigger": true,
+      "reason": "目标文件与上下文明确为实际 Java 编码/审查任务，用户无需点名语言。"
+    },
+    {
+      "id": "context-positive-null",
+      "query": "项目/会话上下文：当前打开 src/main/java/shop/OrderService.java 的 displayName 方法：return repository.find(id).getName();。仓库方法注明查不到返回 null，调用方约定返回“未知订单”；pom.xml release=8。\n用户请求：修复这里返回空值时报错的问题。",
+      "should_trigger": true,
+      "reason": "目标文件与上下文明确为实际 Java 编码/审查任务，用户无需点名语言。"
+    },
+    {
+      "id": "context-positive-review",
+      "query": "项目/会话上下文：当前项目 pom.xml release=17；本次 diff 仅 src/main/java/shop/OrderLoader.java，将 try-with-resources 改成只在读取成功后 close，目标是只给评审意见。\n用户请求：审查这次提交。",
+      "should_trigger": true,
+      "reason": "目标文件与上下文明确为实际 Java 编码/审查任务，用户无需点名语言。"
+    },
+    {
+      "id": "context-positive-followup",
+      "query": "项目/会话上下文：上轮会话改动 src/main/java/shop/OrderService.java 的 cancel(long id)，已约定不存在抛 OrderNotFoundException、已取消操作幂等；本轮目标 src/test/java/shop/OrderServiceTest.java，项目使用 JUnit 5，release=17。\n用户请求：给刚才修改的方法补测试。",
+      "should_trigger": true,
+      "reason": "目标文件与上下文明确为实际 Java 编码/审查任务，用户无需点名语言。"
+    },
+    {
+      "id": "context-negative-frontend",
+      "query": "项目/会话上下文：这是含 pom.xml 和后端 src/main/java 的仓库，本次唯一目标 web/src/pages/Order.vue 的 CSS；不改接口或后端。\n用户请求：只把订单取消按钮改成红色。",
+      "should_trigger": false,
+      "reason": "任务范围仅非 Java 文件，不能按仓库语言误触发。"
+    },
+    {
+      "id": "context-negative-readme",
+      "query": "项目/会话上下文：这是含 pom.xml 和 src/main/java 的服务仓库，本次唯一目标 README.md，不审查或修改程序。\n用户请求：只给安装步骤加一条代理说明。",
+      "should_trigger": false,
+      "reason": "任务范围仅非 Java 文件，不能按仓库语言误触发。"
+    },
+    {
+      "id": "context-negative-workflow",
+      "query": "项目/会话上下文：这是含 src/main/java 的 Maven 仓库，本次唯一目标 .github/workflows/docs.yml 的 timeout-minutes；不涉及编译命令或源文件。\n用户请求：把工作流的超时时间改为 15 分钟。",
+      "should_trigger": false,
+      "reason": "任务范围仅非 Java 文件，不能按仓库语言误触发。"
+    },
+    {
+      "id": "context-negative-frontend-review",
+      "query": "项目/会话上下文：仓库主工程是 Java/Maven，但本次 diff 只有 web/src/pages/Order.vue 的 CSS 与 web/src/order.ts 的前端按钮状态；只评审这些前端变更。\n用户请求：审查这次提交。",
+      "should_trigger": false,
+      "reason": "任务范围仅非 Java 文件，不能按仓库语言误触发。"
     }
   ]
 }

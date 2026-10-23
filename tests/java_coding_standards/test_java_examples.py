@@ -7,6 +7,7 @@ import subprocess
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -29,15 +30,35 @@ def installed_jdks():
             continue
         try:
             result = subprocess.run([compiler, "-version"], capture_output=True, text=True, timeout=15)
+            execution = subprocess.run([runtime, "-version"], capture_output=True, text=True, timeout=15)
         except (OSError, subprocess.TimeoutExpired):
             continue
         match = re.search(r"javac (?:1\.)?(\d+)", result.stdout + result.stderr)
-        if result.returncode == 0 and match:
+        runtime_match = re.search(r'(?:openjdk|java) version "(?:1\.)?(\d+)',
+                                  execution.stdout + execution.stderr)
+        if (result.returncode == execution.returncode == 0 and match and runtime_match
+                and match.group(1) == runtime_match.group(1)):
             found[int(match.group(1))] = (compiler, runtime)
     return found
 
 
 JDKS = installed_jdks()
+
+
+class JdkDiscoveryTests(unittest.TestCase):
+    def discover_pair(self, runtime_version, runtime_status=0):
+        compiler = subprocess.CompletedProcess([], 0, "javac 21.0.9\n", "")
+        runtime = subprocess.CompletedProcess([], runtime_status, "", runtime_version)
+        with patch.dict(os.environ, {"JAVA_TEST_HOMES": ""}), \
+                patch.object(shutil, "which", side_effect=["/jdk/bin/javac", "/jdk/bin/java"]), \
+                patch.object(subprocess, "run", side_effect=[compiler, runtime]):
+            return installed_jdks()
+
+    def test_discovery_requires_matching_functional_runtime(self):
+        self.assertEqual(self.discover_pair('openjdk version "21.0.9"'),
+                         {21: ("/jdk/bin/javac", "/jdk/bin/java")})
+        self.assertEqual(self.discover_pair('openjdk version "17.0.12"'), {})
+        self.assertEqual(self.discover_pair('openjdk version "21.0.9"', 1), {})
 
 
 class JavaExampleTests(unittest.TestCase):
@@ -56,7 +77,7 @@ class JavaExampleTests(unittest.TestCase):
 
     @unittest.skipUnless(JDKS, "No installed functional JDK; examples not executed")
     def test_common_reference_snippets_across_installed_jdks(self):
-        naming = blocks("naming-and-structure.md")[0]
+        numbers = blocks("numbers-and-dates.md")[0]
         collections = blocks("collections.md")[0]
         resources = blocks("resources-and-security.md")[0]
         concurrency = blocks("concurrency.md")[0]
@@ -108,7 +129,7 @@ public class ReferenceExamples {
         } finally { Files.delete(file); }
     }
 }
-""" % (resources, jdbc, concurrency, naming, collections)
+""" % (resources, jdbc, concurrency, numbers, collections)
         for jdk in sorted(JDKS):
             if jdk >= 8:
                 with self.subTest(runtime=jdk, target=jdk):

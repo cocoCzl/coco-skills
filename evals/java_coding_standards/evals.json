@@ -7,7 +7,7 @@
       "expected_output": "新增兼容 Java 8 的 DTO。",
       "expectations": [
         "选择本 Skill，无需点名",
-        "只读主入口、相关项目配置及命名结构；不读并发/数据库/完整测试规范",
+        "只读主入口、相关项目配置及命名结构；普通 id/名称/布尔 DTO 不读金额数值日期、并发、数据库或完整测试规范",
         "包装属性、无 is 前缀和无虚构作者；不机械生成 getter 测试"
       ]
     },
@@ -27,7 +27,7 @@
       "expected_output": "小范围去重且行为不变。",
       "expectations": [
         "不升级 Java 或引入 record",
-        "读取命名结构及涉及的异常规则",
+        "读取相关命名结构、金额数值日期及异常规则，不全量加载",
         "复用相关测试，不迁移金额数据库格式或全仓改名"
       ]
     },
@@ -46,7 +46,7 @@
       "prompt": "项目 AGENTS.md 明定 2 空格120列，模块现有 formatter 也如此。新增 Java DTO。",
       "expected_output": "遵守项目风格。",
       "expectations": [
-        "项目规则优于 Skill 默认4空格100列",
+        "项目缩进/列宽逐项覆盖 Skill 默认，其他适用质量规则继续执行；不因已有 formatter 跳过 Skill",
         "不导入 XML 或改格式插件",
         "说明实际使用规则，不把差异判违规"
       ]
@@ -178,7 +178,7 @@
       "expectations": [
         "不把Enum后缀参考判为强制",
         "80行仅推荐且不借机重构",
-        "明确BigDecimal构造强制问题并给出字符串或valueOf修复"
+        "按需读取金额数值日期，明确 BigDecimal 构造强制问题并给出字符串或 valueOf 修复"
       ]
     },
     {
@@ -189,6 +189,86 @@
         "识别编译与运行目标均为25，不假定8/17/21为最高支持版本",
         "保留项目record和其他正式特性，不主动启用preview",
         "选择相关规则与测试，报告实际使用的JDK及未验证环境"
+      ]
+    },
+    {
+      "id": "context-cancel",
+      "prompt": "项目/会话上下文：当前项目 pom.xml 设置 release=17，目标 src/main/java/shop/OrderController.java 与 OrderService.java；沿用现有控制器路由和取消状态约束。\n用户请求：给订单增加一个取消接口。",
+      "expected_output": "沿用现有路由与错误契约增加取消接口。",
+      "expectations": [
+        "根据目标文件选择 Skill，不要求用户重述语言",
+        "检查调用方、状态约束与项目版本；仅加载相关资料",
+        "完成接口与必要测试，不全仓排版或改构建"
+      ]
+    },
+    {
+      "id": "context-null",
+      "prompt": "项目/会话上下文：当前打开 src/main/java/shop/OrderService.java 的 displayName 方法：return repository.find(id).getName();。仓库方法注明查不到返回 null，调用方约定返回“未知订单”；pom.xml release=8。\n用户请求：修复这里返回空值时报错的问题。",
+      "expected_output": "按既有空值契约返回未知订单，保留其他失败。",
+      "expectations": [
+        "选择 Skill 并检查空值契约及异常资料",
+        "覆盖存在、不存在及仓库失败；不通过 catch(Exception) 伪造成功",
+        "不改无关文件或新装检查工具；项目格式不免除空值处理"
+      ]
+    },
+    {
+      "id": "context-review",
+      "prompt": "项目/会话上下文：当前项目 pom.xml release=17；本次 diff 仅 src/main/java/shop/OrderLoader.java，将 try-with-resources 改成只在读取成功后 close，目标是只给评审意见。\n用户请求：审查这次提交。",
+      "expected_output": "定位异常路径资源泄漏，只给审查意见。",
+      "expectations": [
+        "根据 diff 选择 Skill 并读取资源及异常资料",
+        "给出位置、触发条件和修复建议",
+        "不修改文件或执行无关全量构建"
+      ]
+    },
+    {
+      "id": "context-followup",
+      "prompt": "项目/会话上下文：上轮会话改动 src/main/java/shop/OrderService.java 的 cancel(long id)，已约定不存在抛 OrderNotFoundException、已取消操作幂等；本轮目标 src/test/java/shop/OrderServiceTest.java，项目使用 JUnit 5，release=17。\n用户请求：给刚才修改的方法补测试。",
+      "expected_output": "为取消方法补有区分度的回归测试。",
+      "expectations": [
+        "沿会话及测试路径选择 Skill，按需读测试资料",
+        "验证不存在、取消及重复取消契约",
+        "复用 JUnit 5 和已有命令，不改未涉及的业务代码"
+      ]
+    },
+    {
+      "id": "context-nonjava-frontend",
+      "prompt": "项目/会话上下文：这是含 pom.xml 和后端 src/main/java 的仓库，本次唯一目标 web/src/pages/Order.vue 的 CSS；不改接口或后端。\n用户请求：只把订单取消按钮改成红色。",
+      "expected_output": "完成指定非 Java 任务或只读评审。",
+      "expectations": [
+        "不因仓库含 Java 而读取或启动 Java 编码规范",
+        "完成指定文件变更或给出目标 diff 的评审意见",
+        "不改后端、Java 构建或其他无关文件"
+      ]
+    },
+    {
+      "id": "context-nonjava-readme",
+      "prompt": "项目/会话上下文：这是含 pom.xml 和 src/main/java 的服务仓库，本次唯一目标 README.md，不审查或修改程序。\n用户请求：只给安装步骤加一条代理说明。",
+      "expected_output": "完成指定非 Java 任务或只读评审。",
+      "expectations": [
+        "不因仓库含 Java 而读取或启动 Java 编码规范",
+        "完成指定文件变更或给出目标 diff 的评审意见",
+        "不改后端、Java 构建或其他无关文件"
+      ]
+    },
+    {
+      "id": "context-nonjava-workflow",
+      "prompt": "项目/会话上下文：这是含 src/main/java 的 Maven 仓库，本次唯一目标 .github/workflows/docs.yml 的 timeout-minutes；不涉及编译命令或源文件。\n用户请求：把工作流的超时时间改为 15 分钟。",
+      "expected_output": "完成指定非 Java 任务或只读评审。",
+      "expectations": [
+        "不因仓库含 Java 而读取或启动 Java 编码规范",
+        "完成指定文件变更或给出目标 diff 的评审意见",
+        "不改后端、Java 构建或其他无关文件"
+      ]
+    },
+    {
+      "id": "context-nonjava-frontend-review",
+      "prompt": "项目/会话上下文：仓库主工程是 Java/Maven，但本次 diff 只有 web/src/pages/Order.vue 的 CSS 与 web/src/order.ts 的前端按钮状态；只评审这些前端变更。\n用户请求：审查这次提交。",
+      "expected_output": "完成指定非 Java 任务或只读评审。",
+      "expectations": [
+        "不因仓库含 Java 而读取或启动 Java 编码规范",
+        "完成指定文件变更或给出目标 diff 的评审意见",
+        "不改后端、Java 构建或其他无关文件"
       ]
     }
   ]

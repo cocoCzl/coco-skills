@@ -26,6 +26,34 @@ jobs:
       - name: Run all unit tests
         run: python -B -m unittest discover -s tests -p 'test_*.py'
 
+  java-examples:
+    name: Java reference examples (JDK 21)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Require paired JDK 21 and execute Java examples
+        run: |
+          javac -version
+          java -version
+          python -B - <<'PY'
+          import unittest
+          from tests.java_coding_standards import test_java_examples as examples
+
+          if 21 not in examples.JDKS:
+              raise SystemExit("A functional javac/java 21 pair is required")
+          suite = unittest.defaultTestLoader.loadTestsFromModule(examples)
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          if not result.wasSuccessful() or result.skipped:
+              raise SystemExit("Java examples must pass without skips in this CI job")
+          PY
+
   pdf-qa:
     name: PDF QA (Ubuntu 24.04, Python 3.12)
     runs-on: ubuntu-24.04

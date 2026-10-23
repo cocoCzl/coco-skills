@@ -11,7 +11,7 @@
 | `ai-resume-expert` | 面向中国大陆技术岗位的、证据优先的简历生成、诊断、JD 定制与本地 PDF 交付 | [README](ai-resume-expert/README.md) · [SKILL.md](ai-resume-expert/SKILL.md) |
 | `football-betting-assistant` | 中文足球竞彩赛前分析、组合建议、赛后复盘与回测辅助 | [README](football-betting-assistant/README.md) · [SKILL.md](football-betting-assistant/SKILL.md) |
 | `java-code-to-erd` | 从 Java 源码、ORM 映射和 SQL 还原可验证的数据库模型与 ERD | [README](java-code-to-erd/README.md) · [SKILL.md](java-code-to-erd/SKILL.md) |
-| `java-coding-standards` | Java 编写、修复、重构与审查；融合 IDEA XML 与黄山版规则，按需加载并尊重项目工具链 | [README](java-coding-standards/README.md) · [SKILL.md](java-coding-standards/SKILL.md) |
+| `java-coding-standards` | 为 Java 编写、修复、重构和审查提供统一的格式与质量规范，兼容项目已有约定，不依赖特定 IDE。 | [README](java-coding-standards/README.md) · [SKILL.md](java-coding-standards/SKILL.md) |
 | `lottery-number-recommendation` | 大乐透和双色球的官方历史校验、号码生成与回测辅助 | [README](lottery-number-recommendation/README.md) · [SKILL.md](lottery-number-recommendation/SKILL.md) |
 
 ## 安装
