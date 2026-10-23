@@ -1,5 +1,7 @@
 # Workflow
 
+Built-in `report` produces a market snapshot only; it does not execute the full model below. See [agent interface](agent-interface.md#按需运行单场模型) for model inputs, separate calculation, and current report integration limits. Preserve this downgrade in chat and artifacts.
+
 Follow this workflow before producing a full football betting report. Simple queries and local explanations stay in chat; refresh current facts only when needed. `doctor` and `route` are optional diagnostics, not mandatory preflight commands.
 
 ## Runtime Modes

@@ -11,8 +11,10 @@ from pathlib import Path
 from typing import Any
 
 try:
+    from handicap_rules import handicap_result as _handicap_result
     from prediction_snapshot_tools import normalize_prediction_snapshot
 except ImportError:  # pragma: no cover - package execution fallback
+    from scripts.handicap_rules import handicap_result as _handicap_result  # type: ignore
     from scripts.prediction_snapshot_tools import normalize_prediction_snapshot  # type: ignore
 
 
@@ -26,15 +28,6 @@ def _match_result(home_goals: int, away_goals: int) -> str:
     if home_goals == away_goals:
         return "平"
     return "负"
-
-
-def _handicap_result(home_goals: int, away_goals: int, line: float) -> str:
-    adjusted = home_goals + line - away_goals
-    if adjusted > 0:
-        return "让胜"
-    if adjusted == 0:
-        return "让平"
-    return "让负"
 
 
 def _parse_line(value: Any) -> float | None:

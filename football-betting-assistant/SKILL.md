@@ -29,7 +29,7 @@ description: 用户请求足球竞彩/足球彩票、赛前分析、胜平负、
 4. 收集比赛身份、时间、地点、赔率/盘口、球队状态和赛事背景，并记录来源与观察时间。冲突不静默平均，按来源质量处理并降低 Data Confidence。
 5. 按顺序完成 **Probability Analysis → Value Judgment → Reference Purchase Plan**。没有真实赔率时停止在概率分析；缺少可售市场时不生成该市场购买项。
 6. 正式主单必须通过风险审计；`report` 已内置快照校验与 `audit`，相同输入不重复审计。输入或方案变化后重新检查；阻断项必须保护、降级或移除。
-7. 完成完整赛前分析后生成单个自包含 HTML 和预测快照；聊天仅返回 2～4 行摘要及路径。
+7. 按实际完成阶段生成单个自包含 HTML 和预测快照；聊天仅返回 2～4 行摘要及路径，并保留数据和模型限制。内置 `report` 只生成市场快照报告，不执行 xG/泊松模型；完整计算入口与手工报告衔接见 [接口说明](references/agent-interface.md)。
 
 ## 按需加载
 
@@ -40,11 +40,11 @@ description: 用户请求足球竞彩/足球彩票、赛前分析、胜平负、
 - 降级和停止规则：[`references/downgrade-rules.md`](references/downgrade-rules.md)
 - 回测校准：[`references/backtesting.md`](references/backtesting.md)
 
-只读当前任务需要的文件。术语不熟悉时再读 [`references/glossary.md`](references/glossary.md)。
+只读当前任务需要的文件，已读取且未变化的不重复读取。术语不熟悉时再读 [`references/glossary.md`](references/glossary.md)。
 
 ## 分析与购买一致性
 
-- 可分析比赛都给出 xG 先验、有限上下文调整、最终 xG、Poisson 比分集中度、赛果/大小球概率和置信度；缺输入时标明近似并降级。
+- 只有具备可信球队输入并实际计算后才给出 xG 先验、有限调整、最终 xG、Poisson 比分和赛果/大小球概率；缺模型输入时仅交付市场快照与缺口，不推造概率或 edge。
 - 有赔率才计算隐含/去水概率、edge 和 Reference Grade。区分 Model Confidence 与 Data Confidence。
 - 小组末轮在动机调整前核实排名、积分、净胜球、出线压力、轮换和潜在路线；缺结构化背景的比赛不得进入“模型最稳”。
 - 让球结果必须按 `主队进球 + 主队让球数 - 客队进球` 显式核对。候选比分跨越多个让球结果时，要保护、换市场或降级。

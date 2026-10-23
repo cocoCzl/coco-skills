@@ -53,6 +53,14 @@ class FootballAgentEntrypointTests(unittest.TestCase):
             self.assertTrue(report_payload["data"]["validation"]["valid"])
             self.assertIn("main_plan_allowed", report_payload["data"]["risk_audit"]["summary"])
             self.assertTrue(Path(report_payload["data"]["html_report_path"]).is_file())
+            self.assertEqual(report_payload["status"], "degraded")
+            self.assertEqual(report_payload["data_status"], "usable-but-downgraded")
+            self.assertEqual(report_payload["data_status"], report_payload["data"]["data_status"])
+            self.assertIn("未运行", " ".join(report_payload["data"]["chat_summary"]))
+            self.assertTrue(report_payload["next_action"])
+            report_input = json.loads(Path(report_payload["data"]["report_input_path"]).read_text())
+            for analysis in report_input["match_analyses"]:
+                self.assertIn("尚未运行", analysis["poisson_summary"])
             self.assertLess(report_payload["metrics"]["elapsed_ms"], 2000)
 
     def test_audit_block_is_exposed_as_stable_orchestration_status(self) -> None:
@@ -82,6 +90,22 @@ class FootballAgentEntrypointTests(unittest.TestCase):
         self.assertEqual(result.returncode, 3)
         self.assertEqual(payload["status"], "blocked")
         self.assertEqual(payload["error_code"], "RISK_AUDIT_BLOCKED")
+
+    def test_snapshot_without_offered_odds_remains_degraded(self) -> None:
+        snapshot = json.loads((FIXTURES / "football-snapshot-sporttery.json").read_text())
+        for match in snapshot["data"]["matches"]:
+            for market in match["markets"]:
+                market["selections"] = []
+                market["availability"] = {"status": "unavailable", "reason": "not_offered"}
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            path = root / "no-odds.json"
+            path.write_text(json.dumps(snapshot))
+            result, payload = self.run_entry("report", str(path), "--report-out-dir", str(root / "reports"), "--data-out-dir", str(root / "data"))
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            self.assertEqual(payload["status"], "degraded")
+            self.assertEqual(payload["data_status"], "no-actual-odds-lines")
+            self.assertIn("未运行", " ".join(payload["data"]["chat_summary"]))
 
     def test_unsupported_fetch_never_silently_uses_sporttery(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

@@ -13,7 +13,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from contextlib import redirect_stdout
+from contextlib import ExitStack, redirect_stdout
 from pathlib import Path
 from typing import Any, Dict, Tuple
 from unittest.mock import patch
@@ -182,22 +182,17 @@ class PdfPipelineTests(unittest.TestCase):
             ]
         )
 
-    def isolated_tool_environment(self, directory: Path, excluded: set[str] | None = None) -> Dict[str, str]:
-        excluded = excluded or set()
+    def isolated_tool_environment(self, directory: Path) -> Dict[str, str]:
+        # Override chosen validators while preserving all renderer dependencies
+        # (including launcher shells and their original PATH).
         bin_dir = directory / "isolated-bin"
         bin_dir.mkdir()
-        # Keep every renderer that the integration-stack probe accepts.  A
-        # GitHub runner may expose LibreOffice as ``libreoffice`` rather than
-        # ``soffice``, or have only WeasyPrint available.  This helper is used
-        # to remove a validation capability, not to remove rendering itself.
-        for name in ("soffice", "libreoffice", "weasyprint", "pdftotext", "pdfinfo", "pdftoppm", "pdffonts"):
-            if name in excluded:
-                continue
+        for name in ("pdftotext", "pdfinfo", "pdftoppm", "pdffonts"):
             resolved = shutil.which(name)
             if resolved:
                 (bin_dir / name).symlink_to(resolved)
         environment = os.environ.copy()
-        environment["PATH"] = str(bin_dir)
+        environment["PATH"] = str(bin_dir) + os.pathsep + environment.get("PATH", "")
         return environment
 
     def write_fake_executable(self, directory: Path, name: str, body: str) -> Path:
@@ -992,8 +987,7 @@ class PdfPipelineTests(unittest.TestCase):
             error_codes = {item["code"] for item in payload["validation"]["errors"]}
             self.assertIn("PDF_SECOND_PAGE_UNDERFILLED", error_codes)
 
-    @unittest.skipUnless(LOCAL_PDF_STACK, "local PDF renderer and Poppler stack is unavailable or unusable")
-    def test_missing_validation_capability_degrades_even_after_pdf_render(self) -> None:
+    def check_missing_validation_after_render(self, *, real_renderer: bool) -> None:
         with tempfile.TemporaryDirectory(dir=TEST_TEMP_ROOT) as tmp:
             root = Path(tmp)
             source = root / "one.md"
@@ -1001,23 +995,43 @@ class PdfPipelineTests(unittest.TestCase):
             package = self.make_pdf_ready_package(root, source)
             output = root / "out"
             output.mkdir()
-            environment = self.isolated_tool_environment(root, excluded={"pdftotext"})
-            result, payload = self.run_renderer(
-                source,
-                output,
-                "--confirmed",
-                "--package",
-                str(package),
-                "--pdftotext",
-                "pdftotext",
-                env=environment,
-            )
-            self.assertEqual(result.returncode, 3)
+            original_resolve = pdf_pipeline.resolve_command
+
+            def resolve_validation(requested, candidates):
+                if "pdftotext" in candidates:
+                    return None
+                return original_resolve(requested, candidates) if real_renderer else "/fake/" + candidates[0]
+
+            def fake_render(_executable, _html, directory, stem):
+                pdf = directory / (stem + ".pdf")
+                pdf.write_bytes(b"%PDF-1.4\nfixture\n")
+                return pdf, {"renderer": "libreoffice", "status": "succeeded", "returncode": 0, "output_produced": True}
+
+            captured = io.StringIO()
+            with ExitStack() as stack:
+                stack.enter_context(patch.object(pdf_pipeline, "resolve_command", side_effect=resolve_validation))
+                if not real_renderer:
+                    stack.enter_context(patch.object(render_resume, "resolve_command", side_effect=lambda _, candidates: "/fake/soffice" if candidates[0] == "soffice" else None))
+                    stack.enter_context(patch.object(render_resume, "_render_with_libreoffice", side_effect=fake_render))
+                stack.enter_context(redirect_stdout(captured))
+                code = render_resume.main([str(source), "--output-dir", str(output), "--confirmed", "--package", str(package)])
+            payload = json.loads(captured.getvalue())
+            self.assertEqual(code, 3, captured.getvalue())
             self.assertEqual(payload["status"], "degraded")
             self.assertFalse(payload["pdf_qualified"])
             self.assertEqual(payload["validation"]["status"], "capability_unavailable")
-            self.assertTrue(Path(payload["artifacts"]["markdown"]).is_file())
-            self.assertTrue(Path(payload["artifacts"]["html"]).is_file())
+            self.assertIsNone(payload["validation"]["capabilities"]["pdftotext"])
+            self.assertTrue(payload["pdf_attempted"])
+            self.assertEqual(payload["renderer"]["attempts"][-1]["status"], "succeeded")
+            for artifact in ("markdown", "html", "pdf"):
+                self.assertTrue(Path(payload["artifacts"][artifact]).is_file())
+
+    def test_missing_validation_capability_after_deterministic_render(self) -> None:
+        self.check_missing_validation_after_render(real_renderer=False)
+
+    @unittest.skipUnless(LOCAL_PDF_STACK, "local PDF renderer and Poppler stack is unavailable or unusable")
+    def test_missing_validation_capability_degrades_even_after_pdf_render(self) -> None:
+        self.check_missing_validation_after_render(real_renderer=True)
 
     @unittest.skipUnless(LOCAL_PDF_STACK, "local PDF renderer and Poppler stack is unavailable or unusable")
     def test_full_body_loss_is_blocking_not_hidden_by_heading_checks(self) -> None:

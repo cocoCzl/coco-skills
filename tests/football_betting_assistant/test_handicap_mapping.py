@@ -19,6 +19,8 @@ RENDERER = SCRIPTS / "render_html_report.py"
 sys.path.insert(0, str(SCRIPTS))
 
 from handicap_rules import handicap_result, handicap_text_conflicts  # noqa: E402
+import post_match_review  # noqa: E402
+import backtest_predictions  # noqa: E402
 
 
 def minimal_document(selection: str, reason: str = "") -> dict:
@@ -51,6 +53,22 @@ def minimal_document(selection: str, reason: str = "") -> dict:
 
 
 class HandicapMappingTests(unittest.TestCase):
+    def test_review_and_backtest_settle_the_same_outcomes(self) -> None:
+        for home, away, line, outcome in (
+            (1, 0, -1, "让平"), (2, 0, -1, "让胜"), (1, 1, -1, "让负"),
+            (0, 0, 1, "让胜"), (0, 1, 1, "让平"), (0, 2, 1, "让负"),
+            (0, 0, 0, "让平"), (2, 1, 0, "让胜"), (0, 1, 0, "让负"),
+        ):
+            with self.subTest(home=home, away=away, line=line):
+                leg = {"market": "让球胜平负", "source_line": str(line), "selection": outcome}
+                self.assertEqual(handicap_result(home, away, line), outcome)
+                self.assertTrue(post_match_review._evaluate_leg(leg, home, away)["hit"])
+                self.assertTrue(backtest_predictions._leg_hit(leg, home, away))
+        for home, away, outcome in ((2, 0, "胜"), (1, 1, "平"), (0, 1, "负")):
+            leg = {"market": "胜平负", "selection": outcome}
+            self.assertTrue(post_match_review._evaluate_leg(leg, home, away)["hit"])
+            self.assertTrue(backtest_predictions._leg_hit(leg, home, away))
+
     def test_minus_one_mapping(self) -> None:
         self.assertEqual(handicap_result(1, 0, -1), "让平")
         self.assertEqual(handicap_result(1, 1, -1), "让负")

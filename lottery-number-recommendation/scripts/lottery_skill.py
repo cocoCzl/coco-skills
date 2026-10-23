@@ -508,22 +508,6 @@ def sync(args: argparse.Namespace) -> dict[str, Any]:
     return {"data_dir": str(data_dir), "games": results}
 
 
-def set_current(args: argparse.Namespace) -> dict[str, Any]:
-    """Explicit acknowledgement after an approved sync or official latest-check."""
-    data_dir = Path(args.data_dir)
-    path = archive_path(data_dir, args.game)
-    archive = read_json(path)
-    complete, missing = check_continuity(archive.get("draws", []))
-    if not complete:
-        raise LotteryError("历史数据不完整，不能标记为最新")
-    archive["complete"] = True
-    archive["missing_sequences"] = missing
-    archive["synced_to_latest"] = True
-    archive["latest_confirmed_at"] = utc_now()
-    write_json(path, archive)
-    return status_for_game(data_dir, args.game)
-
-
 def canonical_key(game: str, zones: dict[str, list[int]]) -> tuple[int, ...]:
     return tuple(number for zone, *_ in GAMES[game]["zones"] for number in zones[zone])
 

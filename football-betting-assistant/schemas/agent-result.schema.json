@@ -9,7 +9,7 @@
     "skill": {"const": "football-betting-assistant"},
     "command": {"type": "string", "minLength": 1},
     "status": {"enum": ["ready", "completed", "blocked", "degraded", "error"]},
-    "data_status": {"type": "string", "minLength": 1},
+    "data_status": {"type": "string", "minLength": 1, "description": "Report generation preserves usable-but-downgraded or no-actual-odds-lines; validated_output alone does not prove model completion."},
     "next_action": {"type": ["string", "null"]},
     "artifacts": {"type": "array", "items": {"type": "string"}},
     "warnings": {"type": "array", "items": {"type": "string"}},

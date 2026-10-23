@@ -1,6 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "title": "Lottery history import",
+  "title": "Lottery internal normalized history",
+  "description": "Internal game/draws envelope written by official synchronization; not a user import API. Per-draw ranges, continuity, coverage and currentness are validated by lottery_skill.py.",
   "type": "object",
   "required": ["game", "draws"],
   "properties": {

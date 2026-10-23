@@ -93,16 +93,54 @@ def doctor() -> dict[str, Any]:
 
 
 def run_child(script: str, arguments: list[str]) -> tuple[int, Any, str]:
-    process = subprocess.run([sys.executable, str(SCRIPT_DIR / script), *arguments], text=True, capture_output=True, check=False)
-    stream = process.stdout.strip() or process.stderr.strip()
+    try:
+        process = subprocess.run([sys.executable, str(SCRIPT_DIR / script), *arguments], text=True, capture_output=True, check=False)
+    except OSError as exc:
+        return 2, {"error": {"code": "CHILD_COMMAND_FAILED", "message": str(exc)}}, ""
+    stream = process.stdout.strip()
     try:
         payload: Any = json.loads(stream)
-    except json.JSONDecodeError:
-        payload = {"raw_output": stream}
+        if not isinstance(payload, dict):
+            raise ValueError("child output must be a JSON object")
+    except (json.JSONDecodeError, ValueError):
+        payload = {
+            "raw_output": stream,
+            "error": {"code": "INVALID_CHILD_OUTPUT", "message": "Child returned empty or non-object JSON output; inspect raw_output and diagnostics."},
+        }
+        return process.returncode or 1, payload, process.stderr.strip()
     return process.returncode, payload, process.stderr.strip()
 
 
+def retain_diagnostics(payload: dict[str, Any], stderr: str, code: int) -> list[str]:
+    """Preserve stderr without making ordinary logging a fatal business error."""
+    def strings(value: Any) -> list[str]:
+        if isinstance(value, str):
+            return [value]
+        if isinstance(value, dict):
+            return [text for item in value.values() for text in strings(item)]
+        if isinstance(value, list):
+            return [text for item in value for text in strings(item)]
+        return []
+
+    existing = [line.strip() for value in strings(payload) for line in value.splitlines()]
+    diagnostics = payload.setdefault("child_diagnostics", []) if stderr else []
+    warnings: list[str] = []
+    for line in stderr.splitlines():
+        line = line.strip()
+        if not line or line in existing:
+            continue
+        prefix = line.lower().lstrip("[")
+        level = "log" if prefix.startswith(("info", "debug")) else ("error" if code else "warning")
+        diagnostics.append({"level": level, "message": line})
+        if level == "warning":
+            warnings.append(line)
+        existing.append(line)
+    return warnings
+
+
 def child_error_code(command: str, payload: Any) -> str:
+    if isinstance(payload, dict) and isinstance(payload.get("error"), dict) and payload["error"].get("code"):
+        return payload["error"]["code"]
     text = json.dumps(payload, ensure_ascii=False) if isinstance(payload, (dict, list)) else str(payload)
     if "no matching fixtures" in text:
         return "FIXTURE_NOT_FOUND"
@@ -203,16 +241,20 @@ def main() -> int:
             child += ["--all-history"]
 
     code, payload, stderr = run_child(script, child)
+    warnings = retain_diagnostics(payload, stderr, code)
     if code == 0 and args.command == "report" and isinstance(payload, dict):
-        # The HTML renderer has already enforced html-report.schema.json. The
-        # cross-workflow validator checks the linked prediction snapshot used
-        # by review and backtesting.
-        validation_code, validation, _ = run_child("validate_inputs.py", [str(payload.get("prediction_snapshot_path", ""))])
-        audit_code, audit, _ = run_child("preflight_risk_audit.py", [str(payload.get("prediction_snapshot_path", ""))])
-        payload = {**payload, "validation": validation, "risk_audit": audit}
+        # The builder checks source data; the renderer checks required fields
+        # and ticket consistency, not full JSON Schema conformance.
+        # Check the linked snapshot used by review and backtesting.
+        validation_code, validation, validation_stderr = run_child("validate_inputs.py", [str(payload.get("prediction_snapshot_path", ""))])
+        warnings.extend(retain_diagnostics(validation, validation_stderr, validation_code))
+        payload = {**payload, "validation": validation}
         if validation_code != 0:
             code = validation_code
-        elif audit_code != 0:
+        else:
+            audit_code, audit, audit_stderr = run_child("preflight_risk_audit.py", [str(payload.get("prediction_snapshot_path", ""))])
+            warnings.extend(retain_diagnostics(audit, audit_stderr, audit_code))
+            payload["risk_audit"] = audit
             code = audit_code
     artifacts = collect_artifacts(payload)
     if code == 0:
@@ -222,11 +264,12 @@ def main() -> int:
             code = 3
         elif args.command == "fetch" and isinstance(payload, dict) and payload.get("errors"):
             status, data_status, next_action, error_code = "degraded", "partial_snapshot", "Resolve source or parser errors before treating every market as verified.", "PARTIAL_SOURCE_DATA"
+        elif args.command == "report":
+            status, data_status, next_action, error_code = "degraded", payload["data_status"], "Market snapshot report generated and checked; supply verified team xG inputs and run the model before probability/value analysis. Purchase examples are not model-backed plans.", None
         else:
             status, data_status, next_action, error_code = "completed", "validated_output", None, None
     else:
         status, data_status, next_action, error_code = "blocked", "child_command_failed", "Inspect missing fixtures, markets, data validity, or provider availability before retrying.", child_error_code(args.command, payload)
-    warnings = [stderr] if stderr and not isinstance(payload, dict) else []
     output = result(args.command, started, status=status, data_status=data_status, next_action=next_action, data=payload, artifacts=artifacts, warnings=warnings, error_code=error_code)
     print(json.dumps(output, ensure_ascii=False, indent=2))
     return code

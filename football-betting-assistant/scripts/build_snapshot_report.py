@@ -16,6 +16,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+from validate_inputs import validate_document
+
 
 try:
     from select_snapshot_matches import select_matches
@@ -44,8 +46,11 @@ HIGH_RISK_FLAGS = {
 
 def load_snapshot(path: Path) -> dict[str, Any]:
     document = json.loads(path.read_text(encoding="utf-8"))
-    if document.get("kind") != "football_snapshot":
+    if not isinstance(document, dict) or document.get("kind") != "football_snapshot":
         raise ValueError("snapshot kind must be football_snapshot")
+    validation = validate_document(document)
+    if not validation["valid"]:
+        raise ValueError("; ".join(validation["errors"]))
     return document["data"]
 
 
@@ -363,7 +368,7 @@ def build_report(snapshot: dict[str, Any], matches: list[dict[str, Any]], topic:
             "summary": "本报告先完成竞彩赛程、可买市场和赔率快照核验；模型结论按数据不足降级。",
             "chat_summary": [
                 f"已从 {snapshot.get('provider')} 快照读取 {len(matches)} 场比赛。",
-                "已阻止未确认可买或缺赔率的市场进入购买方案。",
+                "仅完成市场快照报告；未运行 xG/泊松模型，未形成模型概率、价值判断或完整购买方案。",
             ],
         },
         "fixtures": fixtures,
@@ -495,7 +500,11 @@ def main() -> int:
     parser.add_argument("--data-out-dir", type=Path, default=Path("data/football"))
     args = parser.parse_args()
 
-    snapshot = load_snapshot(args.snapshot)
+    try:
+        snapshot = load_snapshot(args.snapshot)
+    except (OSError, ValueError, TypeError, AttributeError) as exc:
+        print(json.dumps({"error": {"code": "DATA_VALIDATION_FAILED", "message": str(exc)}}, ensure_ascii=False, indent=2))
+        return 1
     competition_context = None
     if args.competition_context:
         context_document = json.loads(args.competition_context.read_text(encoding="utf-8"))
@@ -513,6 +522,7 @@ def main() -> int:
     prediction_path = write_json_unique(args.data_out_dir / "predictions" / f"{report_id}.prediction.json", prediction)
     output = {
         "report_id": report_id,
+        "data_status": report["report"]["data_status"],
         "matches": len(matches),
         "html_report_path": str(html_path),
         "report_input_path": str(report_input_path),

@@ -28,4 +28,6 @@
 | AI/大模型应用 | [`roles/ai-llm.md`](roles/ai-llm.md)；明确交叉时补读原方向策略 |
 | 技术负责人/架构师 | [`roles/tech-lead-architect.md`](roles/tech-lead-architect.md)；再补读其技术主域策略 |
 
-完整目录说明见 `README.md`。术语以 `../CONTEXT.md` 为准；任何岗位策略都不能放宽真实性、个人归属、保密和面试可辩护性门槛。
+术语有歧义时查 [`../CONTEXT.md`](../CONTEXT.md)；任何岗位策略都不能放宽真实性、个人归属、保密和面试可辩护性门槛。
+
+所有示例均为虚构、脱敏示例；可以复用写法，不能移植事实和数字。

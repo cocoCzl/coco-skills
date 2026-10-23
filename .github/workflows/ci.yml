@@ -78,7 +78,7 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install --requirement ai-resume-expert/requirements-pdf.txt
           python -m pip check
-      - name: Require a functional PDF stack
+      - name: Check PDF tools and fonts
         run: |
           command -v weasyprint
           command -v pdfinfo
@@ -86,13 +86,15 @@ jobs:
           command -v pdftoppm
           command -v pdffonts
           fc-match "Noto Sans CJK SC"
-          python -B - <<'PY'
-          import runpy
-
-          namespace = runpy.run_path("tests/ai_resume_expert/test_pdf_pipeline.py")
-          if not namespace["LOCAL_PDF_STACK"]:
-              raise SystemExit("ai-resume-expert PDF renderer or Poppler stack is unavailable")
-          print("Functional ai-resume-expert PDF stack confirmed.")
-          PY
       - name: Run PDF integration and validation tests
-        run: python -B -m unittest discover -s tests/ai_resume_expert -p 'test_pdf_pipeline.py' -v
+        run: |
+          python -B - <<'PY'
+          import unittest
+
+          suite = unittest.defaultTestLoader.discover(
+              "tests/ai_resume_expert", pattern="test_pdf_pipeline.py"
+          )
+          result = unittest.TextTestRunner(verbosity=2).run(suite)
+          if not result.wasSuccessful() or result.skipped:
+              raise SystemExit("PDF CI requires all integration and validation tests to pass without skips")
+          PY

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import subprocess
+import sys
 from pathlib import Path
 
 
@@ -15,18 +16,10 @@ def _competition_from_request(request: str) -> str | None:
     return None
 
 
-def _date_from_request(request: str) -> str | None:
-    if "明天" in request:
-        return "tomorrow"
-    if "今天" in request or "今晚" in request:
-        return "today"
-    return None
-
-
-def run_flow(snapshot: Path, request: str, report_out_dir: Path, data_out_dir: Path) -> dict:
-    builder = Path(__file__).with_name("build_snapshot_report.py")
+def run_flow(snapshot: Path, request: str, report_out_dir: Path, data_out_dir: Path, *, date: str) -> dict:
+    builder = Path(__file__).resolve().parents[2] / "football-betting-assistant" / "scripts" / "build_snapshot_report.py"
     base_command = [
-        "python3",
+        sys.executable,
         str(builder),
         str(snapshot),
         "--topic",
@@ -37,7 +30,6 @@ def run_flow(snapshot: Path, request: str, report_out_dir: Path, data_out_dir: P
         str(data_out_dir),
     ]
     command = [*base_command]
-    date = _date_from_request(request)
     competition = _competition_from_request(request)
     if date:
         command.extend(["--date", date])
@@ -45,11 +37,6 @@ def run_flow(snapshot: Path, request: str, report_out_dir: Path, data_out_dir: P
         command.extend(["--competition", competition])
 
     result = subprocess.run(command, text=True, capture_output=True, check=False)
-    if result.returncode != 0 and date:
-        fallback_command = [*base_command]
-        if competition:
-            fallback_command.extend(["--competition", competition])
-        result = subprocess.run(fallback_command, text=True, capture_output=True, check=False)
     if result.returncode != 0:
         return {
             "ok": False,
@@ -79,12 +66,13 @@ def run_flow(snapshot: Path, request: str, report_out_dir: Path, data_out_dir: P
 def main() -> int:
     parser = argparse.ArgumentParser(description="Run offline zero-operation smoke flow against a fixture snapshot.")
     parser.add_argument("snapshot", type=Path)
-    parser.add_argument("--request", default="帮我看下北京时间明天的几场世界杯比赛")
+    parser.add_argument("--request", default="检查历史夹具中的世界杯市场快照")
+    parser.add_argument("--date", required=True, help="Explicit fixture date, YYYY-MM-DD; never retry without this filter.")
     parser.add_argument("--report-out-dir", type=Path, default=Path("reports/football-betting-assistant"))
     parser.add_argument("--data-out-dir", type=Path, default=Path("data/football"))
     args = parser.parse_args()
 
-    output = run_flow(args.snapshot, args.request, args.report_out_dir, args.data_out_dir)
+    output = run_flow(args.snapshot, args.request, args.report_out_dir, args.data_out_dir, date=args.date)
     print(json.dumps(output, ensure_ascii=False, indent=2))
     return 0 if output["ok"] else 1
 

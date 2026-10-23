@@ -16,6 +16,8 @@ from collections import defaultdict
 from pathlib import Path
 from typing import Any
 
+from handicap_rules import handicap_result as _handicap_result_label
+
 RESULT_KEYS = ("home_win", "draw", "away_win")
 
 
@@ -96,15 +98,6 @@ def _match_result_label(home_goals: int, away_goals: int) -> str:
     if home_goals == away_goals:
         return "平"
     return "负"
-
-
-def _handicap_result_label(home_goals: int, away_goals: int, line: float) -> str:
-    adjusted = home_goals + line - away_goals
-    if adjusted > 0:
-        return "让胜"
-    if adjusted == 0:
-        return "让平"
-    return "让负"
 
 
 def _selected_total_goals(value: Any) -> set[int]:

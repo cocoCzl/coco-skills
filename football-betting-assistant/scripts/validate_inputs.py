@@ -10,13 +10,15 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
+import re
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
 
 SCHEMA_REQUIRED: dict[str, list[str]] = {
     "fixture": ["home_team", "away_team", "competition", "kickoff_time", "timezone", "venue_type", "source", "observed_at"],
-    "odds": ["market", "bookmaker_or_source", "observed_at", "confidence"],
     "team_context": ["team", "last_5_summary", "last_10_summary", "lineup_status", "source", "observed_at"],
     "match_analysis": ["fixture", "home_xg", "away_xg", "bayesian_adjustments", "result_probabilities", "score_candidates", "model_confidence", "data_confidence", "reference_grade", "risk_points"],
     "portfolio": ["matches", "correlation_notes", "ticket_tiers", "more_combination_candidates", "excluded_matches", "portfolio_risk_tier"],
@@ -56,6 +58,43 @@ PROTECTION_RISK_FLAGS = {
     "underdog_transition_threat",
     "missed_path_protection",
 }
+
+# Read the portable odds contract once; these are focused checks, not a
+# general JSON Schema implementation. Other kinds retain business validation.
+ODDS_SCHEMA = json.loads((Path(__file__).resolve().parents[1] / "schemas" / "odds.schema.json").read_text(encoding="utf-8"))
+
+
+def _price_error(value: Any, path: str, errors: list[str]) -> None:
+    if value is not None and (type(value) not in (int, float) or (isinstance(value, float) and not math.isfinite(value)) or value <= 1):
+        errors.append(f"{path}: must be a finite number greater than 1 or null")
+
+
+def _validate_selections(value: Any, path: str, *, snapshot: bool = False) -> list[str]:
+    errors: list[str] = []
+    if not isinstance(value, list):
+        return [f"{path}: must be an array"]
+    allowed = set(ODDS_SCHEMA["properties"]["selections"]["items"]["properties"])
+    if snapshot:
+        allowed.add("available")
+    for i, item in enumerate(value):
+        label = f"{path}[{i}]"
+        if not isinstance(item, dict):
+            errors.append(f"{label}: must be an object")
+            continue
+        for key in sorted(set(item) - allowed):
+            errors.append(f"{label}: unexpected field '{key}'")
+        for key in ("name", "odds"):
+            if key not in item:
+                errors.append(f"{label}: missing required field '{key}'")
+        if "name" in item and (not isinstance(item["name"], str) or not item["name"]):
+            errors.append(f"{label}.name: must be a non-empty string")
+        if "odds" in item:
+            _price_error(item["odds"], f"{label}.odds", errors)
+        if "source_name" in item and not isinstance(item["source_name"], str):
+            errors.append(f"{label}.source_name: must be a string")
+        if snapshot and "available" in item and not isinstance(item["available"], bool):
+            errors.append(f"{label}.available: must be a boolean")
+    return errors
 
 
 def _missing(record: dict[str, Any], fields: list[str]) -> list[str]:
@@ -97,15 +136,46 @@ def validate_fixture(record: dict[str, Any], path: str) -> tuple[list[str], list
 def validate_odds(record: dict[str, Any], path: str) -> tuple[list[str], list[str]]:
     errors: list[str] = []
     warnings: list[str] = []
-    for field in _missing(record, SCHEMA_REQUIRED["odds"]):
-        errors.append(f"{path}: missing required field '{field}'")
-    if record.get("confidence") not in CONFIDENCE:
-        errors.append(f"{path}: confidence must be one of {sorted(CONFIDENCE)}")
+    if not isinstance(record, dict):
+        return [f"{path}: must be an object"], []
+    properties = ODDS_SCHEMA["properties"]
+    for field in ODDS_SCHEMA["required"]:
+        if field not in record:
+            errors.append(f"{path}: missing required field '{field}'")
+    for field in sorted(set(record) - set(properties)):
+        errors.append(f"{path}: unexpected field '{field}'")
+    for field in ("market", "confidence"):
+        if field in record and record[field] not in properties[field]["enum"]:
+            errors.append(f"{path}.{field}: must be one of {properties[field]['enum']}")
+    for field in ("bookmaker_or_source", "observed_at", "notes"):
+        if field in record and (not isinstance(record[field], str) or (field != "notes" and not record[field])):
+            errors.append(f"{path}.{field}: must be a {'non-empty ' if field != 'notes' else ''}string")
+    if isinstance(record.get("observed_at"), str):
+        try:
+            stamp = record["observed_at"]
+            if not re.fullmatch(r"\d{4}-\d{2}-\d{2}[Tt]\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:[Zz]|[+-](?:[01]\d|2[0-3]):[0-5]\d)", stamp):
+                raise ValueError("invalid date-time format")
+            parsed = datetime.fromisoformat(stamp.upper().replace("Z", "+00:00"))
+            if "T" not in stamp.upper() or parsed.tzinfo is None:
+                raise ValueError("timestamp needs time and timezone")
+        except ValueError:
+            errors.append(f"{path}.observed_at: must be an RFC 3339 date-time with timezone")
+    if "line" in record and record["line"] is not None:
+        line = record["line"]
+        if not isinstance(line, str) and (type(line) not in (int, float) or (isinstance(line, float) and not math.isfinite(line))):
+            errors.append(f"{path}.line: must be a finite number, string or null")
+    for field in ("home_price", "draw_price", "away_price", "over_price", "under_price"):
+        if field in record:
+            _price_error(record[field], f"{path}.{field}", errors)
+    if "selections" in record:
+        errors.extend(_validate_selections(record["selections"], f"{path}.selections"))
     _warn_timestamp(record, path, warnings)
     if record.get("confidence") == "low":
         warnings.append(f"{path}: low odds confidence; downgrade value judgment")
     prices = [record.get(name) for name in ("home_price", "draw_price", "away_price", "over_price", "under_price")]
-    prices.extend((item or {}).get("odds") for item in (record.get("selections") or []) if isinstance(item, dict))
+    selections = record.get("selections")
+    if isinstance(selections, list):
+        prices.extend(item.get("odds") for item in selections if isinstance(item, dict))
     if not any(price is not None for price in prices):
         warnings.append(f"{path}: no prices supplied; value judgment unavailable")
     if record.get("market") == "half_time_full_time" and len([price for price in prices if price is not None]) < 9:
@@ -267,6 +337,9 @@ def _validate_snapshot_market(record: dict[str, Any], path: str) -> tuple[list[s
     if record.get("market") not in SNAPSHOT_MARKETS:
         errors.append(f"{path}: market must be one of {sorted(SNAPSHOT_MARKETS)}")
     availability = record.get("availability") or {}
+    if not isinstance(availability, dict):
+        errors.append(f"{path}.availability: must be an object")
+        availability = {}
     if availability.get("status") not in SNAPSHOT_AVAILABILITY:
         errors.append(f"{path}.availability: status must be one of {sorted(SNAPSHOT_AVAILABILITY)}")
     if availability.get("reason") not in SNAPSHOT_AVAILABILITY_REASONS:
@@ -283,12 +356,7 @@ def _validate_snapshot_market(record: dict[str, Any], path: str) -> tuple[list[s
         warnings.append(f"{path}: available market has no selections; value judgment unavailable")
     if availability.get("status") in {"unavailable", "parse_failed"} and selections:
         warnings.append(f"{path}: non-available market should normally not include selections")
-    for i, selection in enumerate(selections):
-        if not selection.get("name"):
-            errors.append(f"{path}.selections[{i}]: missing required field 'name'")
-        odds = selection.get("odds")
-        if odds is not None and (not isinstance(odds, (int, float)) or odds <= 1):
-            errors.append(f"{path}.selections[{i}]: odds must be a number greater than 1 or null")
+    errors.extend(_validate_selections(selections, f"{path}.selections", snapshot=True))
     if record.get("source"):
         e, w = _validate_snapshot_source_ref(record["source"], f"{path}.source")
         errors.extend(e)
@@ -523,7 +591,11 @@ def validate_document(document: dict[str, Any]) -> dict[str, Any]:
     errors: list[str] = []
     warnings: list[str] = []
 
+    if not isinstance(document, dict):
+        return {"valid": False, "errors": ["document must be an object"], "warnings": []}
     kind = document.get("kind")
+    if not isinstance(kind, str) or not isinstance(document.get("data"), dict):
+        return {"valid": False, "errors": ["kind must be a string and data must be an object"], "warnings": []}
     if kind in VALIDATORS:
         e, w = VALIDATORS[kind](document.get("data", {}), "data")
         errors.extend(e)
@@ -559,8 +631,11 @@ def main() -> int:
     parser.add_argument("path", type=Path)
     args = parser.parse_args()
 
-    document = json.loads(args.path.read_text(encoding="utf-8"))
-    result = validate_document(document)
+    try:
+        document = json.loads(args.path.read_text(encoding="utf-8"))
+        result = validate_document(document)
+    except (OSError, ValueError, TypeError, AttributeError) as exc:
+        result = {"valid": False, "errors": [f"Invalid input: {exc}"], "warnings": []}
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["valid"] else 1
 

@@ -27,7 +27,7 @@ PORTFOLIO_BUILDER = SKILL / "scripts" / "portfolio_builder.py"
 LATE_RULES = SKILL / "scripts" / "late_update_rules.py"
 POST_MATCH_REVIEW = SKILL / "scripts" / "post_match_review.py"
 AUTO_POST_MATCH_REVIEW = SKILL / "scripts" / "auto_post_match_review.py"
-ZERO_OPERATION_SMOKE = SKILL / "scripts" / "zero_operation_smoke.py"
+ZERO_OPERATION_SMOKE = Path(__file__).with_name("zero_operation_smoke.py")
 COMPETITION_CONTEXT = SKILL / "scripts" / "competition_context_calculator.py"
 
 
@@ -1402,7 +1402,9 @@ class SnapshotContractTests(unittest.TestCase):
                     str(ZERO_OPERATION_SMOKE),
                     str(snapshot),
                     "--request",
-                    "帮我看下北京时间明天的几场世界杯比赛",
+                    "检查历史夹具中的世界杯市场快照",
+                    "--date",
+                    "2026-06-26",
                     "--report-out-dir",
                     str(tmp_path / "reports"),
                     "--data-out-dir",
@@ -1420,6 +1422,36 @@ class SnapshotContractTests(unittest.TestCase):
             self.assertTrue(Path(payload["html_report_path"]).exists())
             self.assertTrue(Path(payload["prediction_snapshot_path"]).exists())
             self.assertLessEqual(len(payload["chat_response_lines"]), 4)
+
+    def test_smoke_does_not_retry_a_date_with_no_matching_fixtures(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "output"
+            result = subprocess.run(
+                ["python3", str(ZERO_OPERATION_SMOKE), str(FIXTURES / "football-snapshot-sporttery.json"),
+                 "--date", "2000-01-01", "--report-out-dir", str(output), "--data-out-dir", str(output)],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertFalse(json.loads(result.stdout)["ok"])
+            self.assertFalse(output.exists())
+
+    def test_legacy_prediction_is_reviewed_without_a_separate_conversion(self) -> None:
+        legacy = {
+            "report_id": "legacy-fixture", "created_at": "2026-06-25T12:00:00+08:00",
+            "matches": [{"match": "A vs B", "score_candidates": "1:0 / 2:0 / 1:1"}],
+            "ticket_plans": [{"name": "fixture", "legs": [{"match": "A vs B", "market": "让球胜平负", "line": "-1", "selection": "让平"}]}],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "legacy.json"
+            path.write_text(json.dumps(legacy))
+            result = subprocess.run(
+                ["python3", str(POST_MATCH_REVIEW), str(path), "--match", "A vs B", "--home-goals", "1", "--away-goals", "0", "--result-source", "synthetic fixture", "--out-dir", str(Path(tmp) / "review")],
+                cwd=ROOT, text=True, capture_output=True, check=False,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            review = json.loads(Path(json.loads(result.stdout)["review_path"]).read_text())["data"]
+            self.assertEqual(review["final_score"]["score"], "1:0")
+            self.assertTrue(review["leg_reviews"][0]["hit"])
 
 
 if __name__ == "__main__":

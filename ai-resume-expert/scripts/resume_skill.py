@@ -92,13 +92,49 @@ def route_request(text: str, *, intent: str | None = None, target_role: str | No
 
 
 def run_child(script: str, arguments: list[str]) -> tuple[int, Any, str]:
-    process = subprocess.run([sys.executable, str(SCRIPT_DIR / script), *arguments], text=True, capture_output=True, check=False)
-    stream = process.stdout.strip() or process.stderr.strip()
+    try:
+        process = subprocess.run([sys.executable, str(SCRIPT_DIR / script), *arguments], text=True, capture_output=True, check=False)
+    except OSError as exc:
+        return 2, {"error": {"code": "CHILD_COMMAND_FAILED", "message": str(exc)}}, ""
+    stream = process.stdout.strip()
     try:
         payload: Any = json.loads(stream)
-    except json.JSONDecodeError:
-        payload = {"raw_output": stream}
+        if not isinstance(payload, dict):
+            raise ValueError("child output must be a JSON object")
+    except (json.JSONDecodeError, ValueError):
+        payload = {
+            "raw_output": stream,
+            "error": {"code": "INVALID_CHILD_OUTPUT", "message": "Child returned empty or non-object JSON output; inspect raw_output and diagnostics."},
+        }
+        return process.returncode or 1, payload, process.stderr.strip()
     return process.returncode, payload, process.stderr.strip()
+
+
+def retain_diagnostics(payload: dict[str, Any], stderr: str, code: int) -> list[str]:
+    """Preserve stderr without making ordinary logging a fatal business error."""
+    def strings(value: Any) -> list[str]:
+        if isinstance(value, str):
+            return [value]
+        if isinstance(value, dict):
+            return [text for item in value.values() for text in strings(item)]
+        if isinstance(value, list):
+            return [text for item in value for text in strings(item)]
+        return []
+
+    existing = [line.strip() for value in strings(payload) for line in value.splitlines()]
+    diagnostics = payload.setdefault("child_diagnostics", []) if stderr else []
+    warnings: list[str] = []
+    for line in stderr.splitlines():
+        line = line.strip()
+        if not line or line in existing:
+            continue
+        prefix = line.lower().lstrip("[")
+        level = "log" if prefix.startswith(("info", "debug")) else ("error" if code else "warning")
+        diagnostics.append({"level": level, "message": line})
+        if level == "warning":
+            warnings.append(line)
+        existing.append(line)
+    return warnings
 
 
 def artifacts_from(payload: Any) -> list[str]:
@@ -190,14 +226,15 @@ def main() -> int:
 
     code, payload, stderr = run_child(script, child_args)
     child_error = payload.get("error", {}) if isinstance(payload, dict) else {}
-    error_code = child_error.get("code") if isinstance(child_error, dict) else None
+    child_error = child_error if isinstance(child_error, dict) else {"message": str(child_error)}
+    error_code = child_error.get("code")
     if code == 0:
         status, data_status, next_action = "completed", "validated_output", payload.get("next_action") if isinstance(payload, dict) else None
     elif code == 3:
-        status, data_status, next_action = "degraded", "capability_unavailable", payload.get("next_action") if isinstance(payload, dict) else "Supply the missing local capability or confirm extracted material."
+        status, data_status, next_action = "degraded", "capability_unavailable", payload.get("next_action") or "Supply the missing local capability or confirm extracted material."
     else:
-        status, data_status, next_action = "blocked", "child_command_failed", child_error.get("message") if isinstance(child_error, dict) else "Inspect the child command output."
-    warnings = [stderr] if stderr and not isinstance(payload, dict) else []
+        status, data_status, next_action = "blocked", "child_command_failed", child_error.get("message") or payload.get("next_action") or "Inspect the child command output and diagnostics."
+    warnings = retain_diagnostics(payload, stderr, code)
     output = envelope(args.command, started, status=status, data_status=data_status, next_action=next_action, data=payload, artifacts=artifacts_from(payload), warnings=warnings, error_code=error_code or ("CHILD_COMMAND_FAILED" if code else None))
     print(json.dumps(output, ensure_ascii=False, indent=2))
     return code
