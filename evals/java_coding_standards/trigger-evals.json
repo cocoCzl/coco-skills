@@ -1,0 +1,149 @@
+{
+  "skill_name": "java-coding-standards",
+  "queries": [
+    {
+      "id": "positive-1",
+      "query": "在订单服务的 Java8 模块新增 OrderDTO，带可空金额和订单号字段。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "positive-2",
+      "query": "修复 UserService.java 比较 Integer 用户ID偶尔出错的问题，不能改接口。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "positive-3",
+      "query": "请重构这段 Java 校验分支，保持原有异常与返回结果。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "positive-4",
+      "query": "审查这个 Java PR 的资源释放和空指针风险，只给评审意见。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "positive-5",
+      "query": "给 Java 工程实现批量导入，复用现有 Maven 和日志依赖。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "positive-6",
+      "query": "这个 Java线程池任务发生 ThreadLocal 污染，请直接修好。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "positive-7",
+      "query": "把 DAO 的字符串拼接查询改成安全的 JDBC 参数绑定。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "positive-8",
+      "query": "给已有 Java 服务补一个能复现事务异常提交的回归测试。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "positive-9",
+      "query": "只调整 UserDTO.java 的缩进与导入，不改业务行为。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "positive-10",
+      "query": "Java21项目用record和虚拟线程，帮我审查这段实现的并发限制。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "positive-11",
+      "query": "重构 Java 日期解析逻辑，修复跨年周序年问题并保留 Java8兼容。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "positive-12",
+      "query": "从实体生成ERD后，另外修复 AccountMapper.java 的空值处理。",
+      "should_trigger": true,
+      "reason": "实际Java实现、修改或审查任务；混合任务仅对代码部分应用。"
+    },
+    {
+      "id": "negative-1",
+      "query": "解释 Java 泛型的 extends 和 super 区别，不需要修改项目代码。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "negative-2",
+      "query": "这本 Java开发手册 PDF 的黄山版版本号是什么？只核对文档。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "negative-3",
+      "query": "从 Java 实体和 mapper 还原 ERD，不要修改源码或评价编码规范。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "negative-4",
+      "query": "从我的 Java项目提交记录提取简历经历，禁止改代码和夸大贡献。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "negative-5",
+      "query": "把 Java开发手册中的目录整理成 Word 文档，不处理项目源码。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "negative-6",
+      "query": "请用生活例子解释 Java虚拟线程和平台线程区别，无需代码审查。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "negative-7",
+      "query": "只分析数据库关系并生成 Mermaid ERD，不需要实现 Java实体。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "negative-8",
+      "query": "读取 intellij-java-google-style.xml，告诉我全局与Java缩进区别，不要修改代码。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "negative-9",
+      "query": "请翻译这段讲解Java异常机制的英文文章，不做项目分析。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "negative-10",
+      "query": "帮我写一封关于 Java团队规范讨论会的邀请函，不发送消息。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "negative-11",
+      "query": "只查 Maven dependency tree 的依赖冲突原因，本轮不修改Java或构建配置。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    },
+    {
+      "id": "negative-12",
+      "query": "从现有 Java接口提取技术栈事实用于简历，不评审也不重构。",
+      "should_trigger": false,
+      "reason": "近邻只读解释/文档/关系/履历任务，无实际Java编码或审查要求。"
+    }
+  ]
+}

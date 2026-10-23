@@ -1,0 +1,6 @@
+interface:
+  display_name: "Java 编码规范"
+  short_description: "融合 IDEA 排版与黄山版规约，按任务指导 Java 编写、修改和审查"
+  default_prompt: "使用 $java-coding-standards，按当前项目版本和规范完成本次 Java 代码任务。"
+policy:
+  allow_implicit_invocation: true

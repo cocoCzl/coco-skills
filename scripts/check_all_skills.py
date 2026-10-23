@@ -32,6 +32,9 @@ IGNORED_DIRS = {
     "scripts",
     "tests",
 }
+# Explicit, reviewed classification; missing scripts/schema never implies guidance-only.
+INSTRUCTION_ONLY_SKILLS = {"java-coding-standards"}
+
 FRONTMATTER_KEY = re.compile(r"^([A-Za-z][A-Za-z0-9_-]*)\s*:\s*(.*)$")
 SKILL_NAME = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)*")
 README_SKILL_LINK = re.compile(r"\]\(\s*(?:\./)?(?P<target>[^)\s]+/SKILL\.md)\s*\)")
@@ -272,6 +275,32 @@ def check_evals(skill: pathlib.Path) -> list[str]:
     return errors
 
 
+def check_interface_contract(skill: pathlib.Path) -> list[str]:
+    """Keep machine-interface checks mandatory except for reviewed guidance packages."""
+    if skill.name in INSTRUCTION_ONLY_SKILLS:
+        # Adding runtime code or an interface requires reclassification, not an exemption.
+        if (skill / "scripts").exists() or (skill / "schemas").exists():
+            return ["Instruction-only skill cannot bundle scripts/schemas; review classification."]
+        return []
+    interface_schema = skill / "schemas" / "agent-result.schema.json"
+    if not interface_schema.is_file():
+        return ["Missing schemas/agent-result.schema.json."]
+    try:
+        contract = json.loads(interface_schema.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return ["Invalid agent result schema: {0}".format(exc)]
+    required_result_fields = {
+        "schema_version", "skill", "command", "status", "data_status",
+        "next_action", "artifacts", "warnings", "error_code", "metrics",
+    }
+    required = contract.get("required") if isinstance(contract, dict) else None
+    if not isinstance(required, list) or not all(isinstance(item, str) for item in required):
+        return ["Agent result schema required must be an array of field names."]
+    if not required_result_fields.issubset(set(required)):
+        return ["Agent result schema is missing required envelope fields."]
+    return []
+
+
 def main() -> int:
     skills = discover_skills()
     if not skills:
@@ -333,28 +362,15 @@ def main() -> int:
             else:
                 print("SKILL.md local links resolve.")
 
-        interface_schema = skill / "schemas" / "agent-result.schema.json"
-        if not interface_schema.is_file():
+        interface_errors = check_interface_contract(skill)
+        if interface_errors:
             failed = True
-            print("Missing schemas/agent-result.schema.json.")
+            for error in interface_errors:
+                print(error)
+        elif skill.name in INSTRUCTION_ONLY_SKILLS:
+            print("Instruction-only skill: no machine interface required.")
         else:
-            try:
-                import json
-
-                contract = json.loads(interface_schema.read_text(encoding="utf-8"))
-            except (OSError, ValueError) as exc:
-                failed = True
-                print("Invalid agent result schema: {0}".format(exc))
-            else:
-                required_result_fields = {
-                    "schema_version", "skill", "command", "status", "data_status",
-                    "next_action", "artifacts", "warnings", "error_code", "metrics",
-                }
-                if not required_result_fields.issubset(set(contract.get("required", []))):
-                    failed = True
-                    print("Agent result schema is missing required envelope fields.")
-                else:
-                    print("Agent result schema present.")
+            print("Agent result schema present.")
 
         eval_errors = check_evals(skill)
         if eval_errors:

@@ -21,7 +21,7 @@ schemas/
 scripts/
 ```
 
-`SKILL.md` 应包含清晰的触发描述、执行边界、需要读取的参考文件和输出要求。`README.md` 应面向人类使用者说明安装、配置和示例。运行时 skill 目录不放测试代码。
+`SKILL.md` 应包含清晰的触发描述、执行边界、需要读取的参考文件和输出要求。`README.md` 应面向人类使用者说明安装、配置和示例。运行时 skill 目录不放测试代码。纯指导型不强制脚本或机器接口；按 [质量分类](QUALITY_STANDARD.md) 显式登记，现有机器接口型校验保持不变。
 
 ## 开发环境
 
@@ -67,7 +67,7 @@ python3 scripts/check_all_skills.py
 
 - skill 自己的 `README.md`
 - 示例输出或输入
-- 仓库根目录 `README.md` 的 skill 列表
+- 仓库根目录 `README.md` 和 `README.en.md` 的 skill 列表
 
 ## 安全和合规
 

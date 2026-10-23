@@ -1,0 +1,195 @@
+{
+  "skill_name": "java-coding-standards",
+  "evals": [
+    {
+      "id": "dto",
+      "prompt": "在已有 Maven Java 8 模块新增 UserDTO，只有 id、displayName、deleted 字段与访问器。",
+      "expected_output": "新增兼容 Java 8 的 DTO。",
+      "expectations": [
+        "选择本 Skill，无需点名",
+        "只读主入口、相关项目配置及命名结构；不读并发/数据库/完整测试规范",
+        "包装属性、无 is 前缀和无虚构作者；不机械生成 getter 测试"
+      ]
+    },
+    {
+      "id": "fix",
+      "prompt": "修复 Java OrderService 的 Integer id 比较在 128 以上失效，null 要视为不相等。",
+      "expected_output": "按契约修复包装值比较。",
+      "expectations": [
+        "检查项目编译目标与调用方契约",
+        "使用非 null 校验与 equals，不使用 ==",
+        "相关回归覆盖大于缓存范围和 null；不扩大改动"
+      ]
+    },
+    {
+      "id": "refactor",
+      "prompt": "仅重构 Java 8 PriceService 的重复校验，保持异常类型、金额单位和返回值兼容。",
+      "expected_output": "小范围去重且行为不变。",
+      "expectations": [
+        "不升级 Java 或引入 record",
+        "读取命名结构及涉及的异常规则",
+        "复用相关测试，不迁移金额数据库格式或全仓改名"
+      ]
+    },
+    {
+      "id": "review",
+      "prompt": "请只审查这个 Java 方法：try { return read(); } finally { return null; }，不要修改文件。",
+      "expected_output": "指出 finally 覆盖返回值及异常。",
+      "expectations": [
+        "使用异常资料且保留强制定位",
+        "给出具体问题与修复建议，不写文件",
+        "不为只读审查全量构建"
+      ]
+    },
+    {
+      "id": "style",
+      "prompt": "项目 AGENTS.md 明定 2 空格120列，模块现有 formatter 也如此。新增 Java DTO。",
+      "expected_output": "遵守项目风格。",
+      "expectations": [
+        "项目规则优于 Skill 默认4空格100列",
+        "不导入 XML 或改格式插件",
+        "说明实际使用规则，不把差异判违规"
+      ]
+    },
+    {
+      "id": "java11",
+      "prompt": "模块 Maven release=11，机器运行 JDK21。把数组转列表逻辑改为局部可读方法。",
+      "expected_output": "用 Java 11 兼容语法和 API。",
+      "expectations": [
+        "编译目标取 release11，不取运行JDK21",
+        "不使用 record、Stream.toList 或虚拟线程",
+        "必要集合资料按需读取，相关编译验证"
+      ]
+    },
+    {
+      "id": "java21",
+      "prompt": "Java21 项目已用 record 和虚拟线程。审查一段穷尽枚举 switch 表达式与受限下游访问逻辑。",
+      "expected_output": "审查现代 API 适用性。",
+      "expectations": [
+        "读取来源决策D7及并发资料",
+        "不强添 default 或把虚拟线程机械改平台线程池",
+        "关注并发限流和生命周期，不启用 preview"
+      ]
+    },
+    {
+      "id": "concurrency",
+      "prompt": "修复线程池任务的 ThreadLocal 泄漏和 tryLock 失败后仍 unlock 的问题。",
+      "expected_output": "按锁持有状态释放，finally清理。",
+      "expectations": [
+        "加载并发资料而非数据库",
+        "锁获取失败不执行临界区且不unlock",
+        "验证异常路径与线程复用，不用重复全量测试证明线程安全"
+      ]
+    },
+    {
+      "id": "resource",
+      "prompt": "readFirstLine 拥有 Reader，但 IOException 后没 close；修复并保留原异常。",
+      "expected_output": "Java版本允许时使用try-with-resources。",
+      "expectations": [
+        "加载资源和异常规则",
+        "覆盖失败关闭并保留主异常/cause",
+        "不关闭借入资源；不改变公开方法契约"
+      ]
+    },
+    {
+      "id": "logging",
+      "prompt": "订单导入失败日志只有 e.getMessage，且 debug 参数计算昂贵，请修复。",
+      "expected_output": "记录允许的上下文及异常对象，避免不必要求值。",
+      "expectations": [
+        "加载异常日志规则",
+        "复用现有门面并使用占位符/级别判断",
+        "不把完整敏感订单JSON写日志，不安装新日志库"
+      ]
+    },
+    {
+      "id": "missing-tools",
+      "prompt": "小型 Java8 项目无 formatter 或静态检查工具，只调整这个方法的格式。",
+      "expected_output": "限定范围人工排版核对。",
+      "expectations": [
+        "依据XML的4空格100列而非标准Google样式",
+        "不下载google-java-format，不接插件或全局IDE设置",
+        "说明未自动格式验证，不新增行为测试或反复全量构建"
+      ]
+    },
+    {
+      "id": "sql",
+      "prompt": "修复 MyBatis 查询里用户昵称直接拼进 SQL 的问题；不要改表结构。",
+      "expected_output": "用绑定参数修复注入。",
+      "expectations": [
+        "加载数据库与相关安全资料",
+        "用户值用参数绑定，不用${}",
+        "不迁移外键/删除语义、不启动ERD生成"
+      ]
+    },
+    {
+      "id": "erd",
+      "prompt": "只从 Java 实体和 mapper 推导 ERD，保留真实外键及表名，不能改源码。",
+      "expected_output": "交给java-code-to-erd按事实分析。",
+      "expectations": [
+        "不启动完整编码流程",
+        "不按手册删外键或改表名",
+        "不运行规范格式化或改Java"
+      ]
+    },
+    {
+      "id": "concept",
+      "prompt": "解释 Java 泛型 PECS 和 Arrays.asList 的语义，不修改或审查任何项目代码。",
+      "expected_output": "准确概念答复。",
+      "expectations": [
+        "不加载完整编码流程",
+        "说明super可读Object，asList可set但不能增删",
+        "不扫描项目或构建"
+      ]
+    },
+    {
+      "id": "pdf",
+      "prompt": "请讨论 Java开发手册黄山版的版本变化并总结 PDF 目录，不涉及代码实现。",
+      "expected_output": "按文档任务处理。",
+      "expectations": [
+        "不自动启动编码规范流程",
+        "不导入格式化XML",
+        "不把手册讨论转换成代码审查"
+      ]
+    },
+    {
+      "id": "scope",
+      "prompt": "只修 PaymentService 一个空指针，旁边还有风格混乱的旧模块，不要动它。",
+      "expected_output": "仅修本次bug及必要关联点。",
+      "expectations": [
+        "不全仓扫描/格式化或批量改名",
+        "项目生效检查配置先查范围，必要冲突才问",
+        "保留测试和规则，不加 suppression 造通过"
+      ]
+    },
+    {
+      "id": "configuration",
+      "prompt": "根POM与子模块release不同，CI用专用profile；仅修改子模块一个Java方法。",
+      "expected_output": "先核实实际profile和模块执行范围。",
+      "expectations": [
+        "不固定Java17/21",
+        "冲突能从配置解决则不追问",
+        "只用生效工具和相关测试，不改构建版本"
+      ]
+    },
+    {
+      "id": "grades",
+      "prompt": "审查 Java enum PaymentStatus 没有 Enum 后缀、方法82行、错误使用 BigDecimal(double)。",
+      "expected_output": "区分参考/推荐/强制。",
+      "expectations": [
+        "不把Enum后缀参考判为强制",
+        "80行仅推荐且不借机重构",
+        "明确BigDecimal构造强制问题并给出字符串或valueOf修复"
+      ]
+    },
+    {
+      "id": "java25",
+      "prompt": "项目toolchain和release都是25，现有record模型正常工作。修复一个字段转换bug，不要降级语法或更改构建。",
+      "expected_output": "按Java25实际项目约束修复，无固定旧版本基线。",
+      "expectations": [
+        "识别编译与运行目标均为25，不假定8/17/21为最高支持版本",
+        "保留项目record和其他正式特性，不主动启用preview",
+        "选择相关规则与测试，报告实际使用的JDK及未验证环境"
+      ]
+    }
+  ]
+}

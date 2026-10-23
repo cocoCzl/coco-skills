@@ -24,6 +24,7 @@ codex exec --skip-git-repo-check --sandbox workspace-write --json \
 - 简历：诊断 PDF 且否定导出；测试开发/客户端已有定位；已确认事实直接生成；缺 PDF 依赖降级。
 - 足球：海外赔率 fetch 明确不支持；竞彩 raw fixture 可抓取；复盘/回测不误回赛程发现；局部让球解释不重生成报告。
 - Java：批量中断恢复与完整扫描等价；修改/删除/配置变化后模型一致；无 Mermaid 时交付 mmd 并说明未视觉验证。
+- Java 编码规范：[跨 JDK 与按需加载样本](java_coding_standards/README.md)；项目风格覆盖、资源异常清理、现代 record/switch 保留、概念/ERD/简历近邻不触发。与 Java ERD 的事实还原任务分开验证。
 - 彩票：推荐内部一次同步；同日缓存复用但最新页仍校验；全量历史更正、失败恢复和回测隔离标准保持。
 
 脚本复现和成本基准按 [QUALITY_STANDARD.md](../QUALITY_STANDARD.md) 执行。网络真实时效、完整 PDF 栈和不同模型触发精度需分别记录验证环境与缺项。

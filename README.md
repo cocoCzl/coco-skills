@@ -11,6 +11,7 @@
 | `ai-resume-expert` | 面向中国大陆技术岗位的、证据优先的简历生成、诊断、JD 定制与本地 PDF 交付 | [README](ai-resume-expert/README.md) · [SKILL.md](ai-resume-expert/SKILL.md) |
 | `football-betting-assistant` | 中文足球竞彩赛前分析、组合建议、赛后复盘与回测辅助 | [README](football-betting-assistant/README.md) · [SKILL.md](football-betting-assistant/SKILL.md) |
 | `java-code-to-erd` | 从 Java 源码、ORM 映射和 SQL 还原可验证的数据库模型与 ERD | [README](java-code-to-erd/README.md) · [SKILL.md](java-code-to-erd/SKILL.md) |
+| `java-coding-standards` | Java 编写、修复、重构与审查；融合 IDEA XML 与黄山版规则，按需加载并尊重项目工具链 | [README](java-coding-standards/README.md) · [SKILL.md](java-coding-standards/SKILL.md) |
 | `lottery-number-recommendation` | 大乐透和双色球的官方历史校验、号码生成与回测辅助 | [README](lottery-number-recommendation/README.md) · [SKILL.md](lottery-number-recommendation/SKILL.md) |
 
 ## 安装
@@ -41,9 +42,9 @@ cp -R football-betting-assistant ~/.codex/skills/
 
 ## 使用方式
 
-安装后直接用自然语言提出对应任务即可。Agent 会根据 `SKILL.md` 的触发条件、流程和安全边界执行；具体示例见各 Skill README 与 [`examples/`](examples/)。
+安装后直接用自然语言提出对应任务即可。Agent 根据描述选择适用 Skill，安装不保证每次自动触发，也可显式用 `$skill-name` 调用；具体示例见各 Skill README 与 [`examples/`](examples/)。
 
-各 Skill 的用户报告写入当前工作目录的 `reports/<skill-name>/`；运行数据若有保存需求，则位于该 Skill 声明的 `data/` 命名空间中。生成物不会写入安装目录。
+需要产出用户报告的 Skill 写入当前工作目录的 `reports/<skill-name>/`；运行数据若有保存需求，则位于该 Skill 声明的 `data/` 命名空间中。生成物不会写入安装目录。纯指导型 Skill 直接参与目标项目任务，不要求生成报告或机器接口。
 
 ## 开发
 

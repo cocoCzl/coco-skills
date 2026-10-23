@@ -11,6 +11,7 @@ An open-source collection of Skills for Codex and other AI agents. Every top-lev
 | `ai-resume-expert` | Evidence-first resume creation, review, JD tailoring, and local PDF delivery for mainland China technical roles | [README](ai-resume-expert/README.md) · [SKILL.md](ai-resume-expert/SKILL.md) |
 | `football-betting-assistant` | Chinese football betting analysis, reference combinations, post-match review, and backtesting support | [README](football-betting-assistant/README.md) · [SKILL.md](football-betting-assistant/SKILL.md) |
 | `java-code-to-erd` | Evidence-backed database-model and ERD reconstruction from Java source, ORM mappings, and SQL | [README](java-code-to-erd/README.md) · [SKILL.md](java-code-to-erd/SKILL.md) |
+| `java-coding-standards` | Java implementation, fixes, refactoring and review with project-aware IDEA formatting and Huangshan guidelines | [README](java-coding-standards/README.md) · [SKILL.md](java-coding-standards/SKILL.md) |
 | `lottery-number-recommendation` | Official-history validation, number generation, and backtesting support for DLT and SSQ | [README](lottery-number-recommendation/README.md) · [SKILL.md](lottery-number-recommendation/SKILL.md) |
 
 ## Install
@@ -41,9 +42,9 @@ Remove `-g` for a project-level installation. Agent-specific install locations v
 
 ## Use
 
-After installation, ask for the relevant task in natural language. The agent follows each Skill's trigger conditions, workflow, and safety boundaries in `SKILL.md`. See the Skill READMEs and [`examples/`](examples/) for task-specific examples.
+After installation, ask for the relevant task in natural language. The agent selects Skills by their descriptions; installation does not guarantee automatic selection. Explicit `$skill-name` invocation is also available. See the Skill READMEs and [`examples/`](examples/) for task-specific examples.
 
-User-facing artifacts are written to `reports/<skill-name>/` in the current workspace. Reusable runtime data, where applicable, stays in the Skill's declared `data/` namespace rather than its install directory.
+Where a Skill produces reports, user-facing artifacts are written to `reports/<skill-name>/` in the current workspace. Reusable runtime data, where applicable, stays in the Skill's declared `data/` namespace rather than its install directory. Instruction-only Skills work directly on the target task without requiring reports or machine interfaces.
 
 ## Development
 

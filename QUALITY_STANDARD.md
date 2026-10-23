@@ -6,7 +6,13 @@
 
 - **公开格式要求**：Skill 目录至少有 `SKILL.md`，包含 YAML frontmatter 和 Markdown 正文；`name` 为 1～64 字符、小写字母/数字/单连字符、与父目录一致；`description` 为 1～1024 字符。提供 `compatibility` 时为 1～500 字符。
 - **公开推荐实践**：渐进加载、主指令约少于 5000 tokens / 500 行、聚焦的按需资料、确定性操作交给脚本。它们不是正文格式的硬限制；行数少不等于实际执行轻量。
-- **本仓库约定**：顶层独立源码、面向人的 README、500 行预算、结果信封及 Schema、`reports/`/`data/` 命名空间、单元测试、行为案例至少 10 个且每例至少 3 项预期、平衡近邻触发集至少 20 个。这些不是公开规范要求。检查器是针对本仓库简明 frontmatter 的结构检查，不是通用 YAML/官方完整校验器。
+- **本仓库约定**：顶层独立源码、面向人的 README、500 行预算、机器接口型 Skill 的结果信封及 Schema、`reports/`/`data/` 命名空间、单元测试、行为案例至少 10 个且每例至少 3 项预期、平衡近邻触发集至少 20 个。这些不是公开规范要求。检查器是针对本仓库简明 frontmatter 的结构检查，不是通用 YAML/官方完整校验器。
+
+## 指导型与机器接口型
+
+默认所有 Skill 继续校验 `schemas/agent-result.schema.json` 及其原有结果信封字段；缺脚本或缺 Schema 不构成豁免。`scripts/check_all_skills.py` 的显式 `INSTRUCTION_ONLY_SKILLS` 当前仅登记 `java-coding-standards`：它提供指令、参考资料与配置资产，不提供机器接口，不制造 scripts、Schema、doctor/route、JSON 或运行报告。登记项出现 scripts/schemas 目录即检查失败，须评审重新分类。
+
+两类都须通过元数据、README、链接、包装边界及同样的评测结构检查。接口型继续运行现有脚本测试/性能检查；指导型验证来源、资产保真和代表性示例，行为另由真实 Agent 评测。新豁免必须明确评审分类及回归测试，不得为逃避接口校验改名登记。
 
 ## 质量与成本
 
